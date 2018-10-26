@@ -1,0 +1,31 @@
+{
+  "name": "pickforus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./index.js --exec babel-node -e js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cnsaavedra/PickForUs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cnsaavedra/PickForUs/issues"
+  },
+  "homepage": "https://github.com/cnsaavedra/PickForUs#readme",
+  "dependencies": {
+    "express": "^4.16.4",
+    "socket.io": "^2.1.1",
+    "nodemon": "^1.18.5",
+    "http-server": "^0.11.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-stage-0": "^6.24.1"
+  }
+}
