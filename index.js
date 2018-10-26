@@ -2,7 +2,7 @@ const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 var MongoClient = require('mongodb').MongoClient;
-var url = 'mongodb://localhost:3000/chat_database';
+var url = 'mongodb://localhost:27017/chat_database';
 
 
 MongoClient.connect(url, function (err, db){
@@ -24,7 +24,9 @@ MongoClient.connect(url, function (err, db){
             messagesCollection.insertOne({text: data.msg}, function (err, res){
                console.log('inserted into messagesCollection')
             });
+            //#TODO now that we have database, need to manipulate database
             tech.in(data.room).emit('message', data.msg);
+            tech.in(data.room).emit('message', data.msg + "The number of times " + db.collection())
             console.log(data.msg + " outside messageCollection");
         });
 
