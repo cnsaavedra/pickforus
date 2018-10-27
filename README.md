@@ -22,4 +22,5 @@ From the database, the website narrowed down to only selecting food and checks f
 
 
 So in the end we are ended with these options!
+
 ![Image](./meta/foodexamples/suggestionfood.png)
