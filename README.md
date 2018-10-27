@@ -3,7 +3,7 @@ Hanging out with friends? Everyone is indecisive and you all don't know where to
 Get everyone on this website and anonymously share your thoughts on what to do for the rest of the day!
 
 # What's so special about this? Can't we just share our thoughts in real life?
-It is most likely that deep down inside you and your friends that you have somewhere you would want to go.
+No one will be the decisive friend and finalize a place and it is most likely that deep down inside you and your friends that you have somewhere you would want to go.
 This website will extract the information needed from you and your friends to finalize and get the most wanted option.
 And really if everyone is indecisive, who is the leader of the group? THIS WEBSITE!
 
