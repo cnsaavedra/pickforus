@@ -24,6 +24,6 @@ In this scenario, seems like everyone is okay with whatever. The website analyze
 From the database, the website narrowed down to only selecting food and checks for the most common phrase (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
 
 
-So in the end we are ended with these options!
+So in the end we are given these options!
 
 ![Image](./meta/foodexamples/suggestionfood.png)
