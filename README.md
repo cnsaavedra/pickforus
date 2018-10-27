@@ -3,10 +3,12 @@ Hanging out with friends? Everyone is indecisive and you all don't know where to
 Get everyone on this website and anonymously share your thoughts on what to do for the rest of the day!
 
 # What's so special about this? Can't we just share our thoughts in real life?
-It is most likely that deep down inside you and your friends that you have somehwere you would want to go.
+It is most likely that deep down inside you and your friends that you have somewhere you would want to go.
 This website will extract the information needed from you and your friends to finalize and get the most wanted option.
 
 # How do you extract the most wanted option?
+### You are given 60 seconds to put in your thoughts, therefore the website is trying to get the first thing that comes to you and your friends heads.
+
 ![Image](./meta/foodexamples/mainmenu.png)
 For example if we want to choose a food place, we would select "Picking Food".
 
