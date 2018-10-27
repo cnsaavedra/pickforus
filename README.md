@@ -8,7 +8,7 @@ This website will extract the information needed from you and your friends to fi
 And really if everyone is indecisive, who is the leader of the group? THIS WEBSITE!
 
 # How do you extract the most wanted option?
-### You are given 60 seconds to put in your thoughts, therefore the website is trying to get the first thing that comes to you and your friends heads.
+### You are given 60 seconds to put in your thoughts, therefore the website is trying to get the first thing that comes to you and your friends minds.
 
 ![Image](./meta/foodexamples/mainmenu.png)
 For example if we want to choose a food place, we would select "Picking Food".
