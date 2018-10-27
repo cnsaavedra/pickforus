@@ -21,7 +21,7 @@ In this scenario, seems like everyone is okay with whatever. The website analyze
 
 ![Image](./meta/foodexamples/databasefood.png)
 
-From the database, the website narrowed down to only selecting food and checks for the most common phrase (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
+From the database, the website narrowed down to only selecting food and checks for the most common cuisine/food (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
 
 
 So in the end we are given these options!
