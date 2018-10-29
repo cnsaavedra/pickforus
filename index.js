@@ -14,6 +14,13 @@ MongoClient.connect(url, function (err, db) {
 
 
     tech.on('connection', (socket) => {
+
+        //#TODO MAKE timerSeconds sync with all clients
+        socket.on('news', (data)=>{
+           socket.emit('news_by_server', data.timerSeconds);
+        });
+
+
         socket.on('join', (data) => {
             socket.join(data.room);
             tech.in(data.room).emit('message', 'New User Connected');
