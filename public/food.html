@@ -83,6 +83,20 @@
     const socket = io.connect('/tech');
     var timerSeconds = 5;
 
+
+    if(typeof localStorage.getItem("sec") !== 'undefined' && localStorage.getItem("sec")!= null ){
+        var sec = localStorage.getItem("sec");
+    }
+    else {
+        var sec = 5;
+    }
+    var time;
+
+
+
+
+
+
     $('form').submit(()=>{
         let msg= $('#m').val();
         socket.emit('message', {msg, room});
@@ -103,13 +117,16 @@
     });
 
     setInterval(function(){
-        if(timerSeconds !== 0){
-            timerSeconds--;
+        localStorage.setItem("sec", sec);
+        time = sec;
+        if(sec !== 0){
+            sec--;
         }
-        else{
-            timerSeconds = 0;
+        else if(sec === 0 || sec < 0){
+            localStorage.setItem("sec", 0);
+            localStorage.clear();
         }
-        socket.emit('news', {timerSeconds});
+        socket.emit('news', {sec});
     }, 1000);
 
 </script>

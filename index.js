@@ -15,9 +15,9 @@ MongoClient.connect(url, function (err, db) {
 
     tech.on('connection', (socket) => {
 
-        //#TODO MAKE timerSeconds sync with all clients
+        //#TODO FIX THE SYNC OF THE TIMERS (maybe switch to sessionStorage?)
         socket.on('news', (data)=>{
-           socket.emit('news_by_server', data.timerSeconds);
+           socket.emit('news_by_server', data.sec);
         });
 
 
