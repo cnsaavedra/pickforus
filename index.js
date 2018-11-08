@@ -12,7 +12,7 @@ MongoClient.connect(url, function (err, db) {
     const tech = io.of('/tech');
     var topWords = {};
     var connections = [];
-    var timer = 5;
+    var timer = 999;
 
 
     tech.on('connection', (socket) => {
@@ -38,10 +38,17 @@ MongoClient.connect(url, function (err, db) {
         });
 
         socket.on('message', (data) => {
+            //includes/excludes words (compare to a dictionary later) to database
             if (data.msg.trim().indexOf(' ') == -1) {
-                messagesCollection.insertOne({text: data.msg}, function (err, res) {
-                    console.log(data.msg + ' inserted into messagesCollection')
-                });
+                if(data.msg.length <= 3){
+                    console.log(data.msg + ' too short to be a food name')
+                }
+                else if(data.msg.length >= 3 && data.msg !== "want" && data.msg !== "some" && data.msg !== "have" && data.msg !== "test") {
+                    messagesCollection.insertOne({text: data.msg}, function (err, res) {
+                        console.log(data.msg + ' inserted into messagesCollection')
+                    });
+                    console.log(data.msg + ' might be food so added to database')
+                }
             }
             else { // sentence includes more than one word
                 var words = data.msg.split(" ");
