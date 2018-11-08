@@ -38,7 +38,7 @@ MongoClient.connect(url, function (err, db) {
         });
 
         socket.on('message', (data) => {
-            //includes/excludes words (compare to a dictionary later) to database
+            // includes/excludes words (compare to a dictionary later) to database
             if (data.msg.trim().indexOf(' ') == -1) {
                 if(data.msg.length <= 3){
                     console.log(data.msg + ' too short to be a food name')
