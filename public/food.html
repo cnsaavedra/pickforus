@@ -10,10 +10,15 @@
             bottom:0;
             width:100%;
             padding-right: 50px;
-
+        }
+        #messages{
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
         }
 
-        #messages{
+        #server_messages{
             list-style-type: none;
             margin: 0;
             padding: 0;
@@ -22,7 +27,27 @@
 
         #messages li{
             padding: 5px 10px;
+            float: left;
+            background: darkgrey;
+            color: #fff;
+            clear: both;
+            border-radius: 30px;
+            margin-bottom: 5px;
+            font-family: Helvetica, Arial, sans-serif;
         }
+
+
+        #server_messages li{
+            padding: 5px 10px;
+            float: left;
+            background: lightblue;
+            color: #fff;
+            clear: both;
+            border-radius: 30px;
+            margin-bottom: 5px;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
 
         div.timer{
             font-size: 100px;
@@ -38,8 +63,10 @@
 <h1>Chat Pls</h1>
 <div class="container-fluid">
     <div class="row">
+        <ul id="server_messages"></ul>
         <ul id="messages"></ul>
     </div>
+
     <div class="row">
         <div class="col-xs-12">
             <form id="message-form" action="">
@@ -57,7 +84,9 @@
 
 
 
-<div class ="timer"></div>
+<div class ="timer">
+
+</div>
 
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -80,14 +109,12 @@
     const room = "food";
     const socket = io.connect('/tech');
 
-
     $('form').submit(()=>{
         let msg= $('#m').val();
         socket.emit('message', {msg, room});
         $('#m').val('');
         return false;
     });
-
     socket.on('connect', ()=>{
         socket.emit('join', {room: room});
     });
@@ -95,8 +122,15 @@
         $('#messages').append($('<li>').text(msg));
     });
 
+    socket.on('server_message', (serverMsg)=>{
+        $('#server_messages').html($('<li>)').text(serverMsg));
+    });
+
     socket.on('time_server', (time)=>{
         $('div.timer').html(time);
+        var timeZero = time !== 0;
+        $('#message-form').toggle(timeZero);
+
     });
 
 </script>

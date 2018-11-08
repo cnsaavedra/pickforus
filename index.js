@@ -12,7 +12,7 @@ MongoClient.connect(url, function (err, db) {
     const tech = io.of('/tech');
     var topWords = {};
     var connections = [];
-    var timer = 60;
+    var timer = 5;
 
 
     tech.on('connection', (socket) => {
@@ -34,7 +34,7 @@ MongoClient.connect(url, function (err, db) {
 
         socket.on('join', (data) => {
             socket.join(data.room);
-            tech.in(data.room).emit('message', 'New User Connected');
+            tech.in(data.room).emit('server_message', connections.length + ' users connected');
         });
 
         socket.on('message', (data) => {
