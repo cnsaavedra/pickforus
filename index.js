@@ -11,14 +11,32 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var topWords = {};
+    var connections = [];
+
+    
 
 
     tech.on('connection', (socket) => {
+        connections.push(socket);
+        var timer = 5;
+        console.log(connections.length);
+        if(connections.length <= 1){
+            var ChatCountdown = setInterval(function(){
+                socket.emit('time_server', timer);
+                if(timer !== 0){
+                  timer--;
+                }
+                else if(timer === 0 || timer < 0){
+                  socket.emit('time_server', timer);
+                  clearInterval(ChatCountdown);
+                }
+            }, 1000);
+        }
+        else{
+            timer = 0;
+            socket.emit('time_server', timer);
+        }
 
-        //#TODO FIX THE SYNC OF THE TIMERS (maybe switch to sessionStorage?)
-        socket.on('news', (data)=>{
-           socket.emit('news_by_server', data.sec);
-        });
 
 
         socket.on('join', (data) => {
