@@ -12,30 +12,23 @@ MongoClient.connect(url, function (err, db) {
     const tech = io.of('/tech');
     var topWords = {};
     var connections = [];
-
-    
+    var timer = 60;
 
 
     tech.on('connection', (socket) => {
         connections.push(socket);
-        var timer = 5;
-        console.log(connections.length);
-        if(connections.length <= 1){
-            var ChatCountdown = setInterval(function(){
-                socket.emit('time_server', timer);
-                if(timer !== 0){
-                  timer--;
-                }
-                else if(timer === 0 || timer < 0){
-                  socket.emit('time_server', timer);
-                  clearInterval(ChatCountdown);
-                }
-            }, 1000);
-        }
-        else{
-            timer = 0;
+        console.log("Connections: " + connections.length);
+
+        var ChatCountdown = setInterval(function(){
             socket.emit('time_server', timer);
-        }
+            if(timer !== 0){
+                timer--;
+            }
+            else if(timer === 0 || timer < 0){
+                socket.emit('time_server', timer);
+                clearInterval(ChatCountdown);
+            }
+            }, 1000);
 
 
 
