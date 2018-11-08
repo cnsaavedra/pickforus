@@ -57,16 +57,34 @@
             border:5px solid black;
         }
 
+        #overlay {
+            position: fixed; /* Sit on top of the page content */
+            display: none; /* Hidden by default */
+            width: 100%; /* Full width (cover the whole page) */
+            height: 100%; /* Full height (cover the whole page) */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+            z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+            cursor: pointer; /* Add a pointer on hover */
+        }
+
     </style>
 </head>
 <body>
 <h1>Chat Pls</h1>
 <div class="container-fluid">
+
+    <!--For the messages that show in the chat-box-->
     <div class="row">
         <ul id="server_messages"></ul>
         <ul id="messages"></ul>
     </div>
 
+
+    <!--Input form, message box and button-->
     <div class="row">
         <div class="col-xs-12">
             <form id="message-form" action="">
@@ -80,6 +98,24 @@
             </form>
         </div>
     </div>
+
+
+    <section class="get">
+        <h3>Get Data</h3>
+        <a href="/get-data">LOAD DATA</a>
+        <div>
+            <article class="item">
+                <div>ID: {{ this._id }}</div>
+            </article>
+        </div>
+    </section>
+
+    <!--Overlay that will appear once time is up-->
+    <div id="overlay">
+        <div class="topfood"></div>
+    </div>
+
+
 </div>
 
 
@@ -107,6 +143,14 @@
     const room = "food";
     const socket = io.connect('/tech');
 
+    //for overlay
+    function resultsOn() {
+        document.getElementById("overlay").style.display = "block";
+    }
+    function resultsOff() {
+        document.getElementById("overlay").style.display = "none";
+    }
+
     $('form').submit(()=>{
         let msg= $('#m').val();
         socket.emit('message', {msg, room});
@@ -128,6 +172,17 @@
         $('div.timer').html(time);
         var timeZero = time !== 0;
         $('#message-form').toggle(timeZero);
+        if(time === 0){
+            resultsOn()
+        }
+        else if(time > 0){
+            resultsOff()
+        }
+    });
+
+    socket.on('top_food', (top)=>{
+        $('div.topfood').html(top);
+
     });
 
 </script>

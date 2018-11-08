@@ -1,8 +1,33 @@
 const app = require('express')();
+var express = require('express');
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:27017/chat_database';
+var router = express.Router();
+var assert = require('assert');
+
+
+router.get('/', function(req, res, next){
+    res.render(__dirname + '/public/index.html');
+});
+
+router.get('/get-data', function(req, res, next) {
+    var resultArray = [];
+    MongoClient.connect(url, function(err, db) {
+        assert.equal(null, err);
+        var cursor = db.collection('user-data').find();
+        cursor.forEach(function(doc, err) {
+            assert.equal(null, err);
+            resultArray.push(doc);
+        }, function() {
+            db.close();
+            res.render('index', {items: resultArray});
+        });
+    });
+});
+
+
 
 
 MongoClient.connect(url, function (err, db) {
@@ -10,15 +35,18 @@ MongoClient.connect(url, function (err, db) {
 
 
     const tech = io.of('/tech');
-    var topWords = {};
     var connections = [];
     var timer = 999;
+    var topWords = [];
+
 
 
     tech.on('connection', (socket) => {
         connections.push(socket);
         console.log("Connections: " + connections.length);
 
+
+        //FOR TIMER
         var ChatCountdown = setInterval(function(){
             socket.emit('time_server', timer);
             if(timer !== 0){
@@ -98,4 +126,3 @@ MongoClient.connect(url, function (err, db) {
     });
 
 });
-
