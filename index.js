@@ -8,28 +8,6 @@ var router = express.Router();
 var assert = require('assert');
 
 
-router.get('/', function(req, res, next){
-    res.render(__dirname + '/public/index.html');
-});
-
-router.get('/get-data', function(req, res, next) {
-    var resultArray = [];
-    MongoClient.connect(url, function(err, db) {
-        assert.equal(null, err);
-        var cursor = db.collection('user-data').find();
-        cursor.forEach(function(doc, err) {
-            assert.equal(null, err);
-            resultArray.push(doc);
-        }, function() {
-            db.close();
-            res.render('index', {items: resultArray});
-        });
-    });
-});
-
-
-
-
 MongoClient.connect(url, function (err, db) {
     var messagesCollection = db.collection('messages');
 
@@ -105,9 +83,26 @@ MongoClient.connect(url, function (err, db) {
     });
 
     const port = 3000;
+    var topFood = 0;
+    var topFoodArray = 0;
 
     server.listen(port, () => {
         console.log('Server is listening on Port: ${port}');
+    });
+
+    app.get('/get-data', function(req, res, next) {
+        db.collection("messages", function (err, collection) {
+            collection.aggregate([{$group: {_id: "$text", MyResults: {$sum: 1}}}]).toArray(function (err, data) {
+                res.json(data);
+                for(var i =0; i < data.length; i++){
+                    if(data[i].MyResults > topFood){
+                        topFoodArray = i;
+                    }
+                }
+                topFood = data[topFoodArray]._id;
+                console.log(topFood);
+            })
+        });
     });
 
 
