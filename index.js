@@ -104,68 +104,29 @@ MongoClient.connect(url, function (err, db) {
                     { $group : {_id: "$text", MyResults: {$sum: 1}}},
                     { $out : "rankings" }
                 ] ).toArray(function (err, data) {
-
-                //puts all the count of each food in an array through numbers
-                for(var i = 0; i < data.length; i++){
-                    if(data[i].MyResults > topFood){
-                        topFoodArray = i;
-                    }
-                    /*
-                    else if(data[i].MyResults < topFood){
-                        top3FoodArray = i;
-                    }*/
-                    top3Arrays.push(data[i].MyResults);
-                    top3NameArrays.push(data[i]._id);
-                }
-
-                /*
-                for(var y = 0; y < topFoodArray; y++){
-                    if(data[y].MyResults > topFood2){
-                        top2FoodArray = y;
-                    }
-                }
-
-
-                for(var z = 0; z < top2FoodArray; z++){
-                    if(data[z].MyResults > topFood3){
-                        top3FoodArray = z;
-                    }
-                }*/
-
-                console.log("All Counts: " + top3Arrays);
-                console.log("All Name Counts: " + top3NameArrays);
-                // this gets the MyResult top 3 (not the id)
-                var topValues = top3Arrays.sort((a,b) => a<b).slice(0,3);
-                //now that got top 3 MyResult, get its respective id
-                console.log("Top 3 Counts: " + topValues);
-                console.log("Top 3 Name Counts: " + topNameValues);
-                console.log("Top 1 Count respective MyResult: " + topValues[0]);
-                console.log();
-                console.log("-----------------------------");
-
-                /*
-                topFood = data[topFoodArray]._id;
-                topFood2 = data[top2FoodArray]._id;
-                topFood3 = data[top3FoodArray]._id;
-                top3[0] = topFood;
-                top3[1] = topFood2;
-                top3[2] = topFood3;
-                */
-                topFood = topValues[0];
-                topFood2 = topValues[1];
-                topFood3 = topValues[2];
-
-                top3[0] = topFood;
-                top3[1] = topFood2;
-                top3[2] = topFood3;
-
-
-                console.log("Top Food: " + top3);
-                res.json(top3);
             });
             db.collection("rankings", function (err, collection) {
                 collection.find().sort({MyResults: -1}).toArray(function (err, data) {
+                    //puts all the count of each food in an array through numbers
+                    for(var i = 0; i < data.length; i++){
+                        if(data[i].MyResults > topFood){
+                            topFoodArray = i;
+                        }
+                        /*
+                        else if(data[i].MyResults < topFood){
+                            top3FoodArray = i;
+                        }*/
+                        top3Arrays.push(data[i].MyResults);
+                        top3NameArrays.push(data[i]._id);
+                    }
 
+                    top3[0] = top3NameArrays[0];
+                    top3[1] = top3NameArrays[1];
+                    top3[2] = top3NameArrays[2];
+
+
+                    console.log("Top Food: " + top3);
+                    res.json(top3);
                 });
             });
 
