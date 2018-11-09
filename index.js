@@ -4,9 +4,10 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:27017/chat_database';
+
 var router = express.Router();
 var assert = require('assert');
-
+var mongo = require('mongodb');
 
 MongoClient.connect(url, function (err, db) {
     var messagesCollection = db.collection('messages');
@@ -14,8 +15,7 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 2;
-
+    var timer = 1;
 
     tech.on('connection', (socket) => {
         connections.push(socket);
@@ -27,8 +27,10 @@ MongoClient.connect(url, function (err, db) {
             socket.emit('time_server', timer);
             timer--; // had to remove the if (timer > 0) because it creates two multiples of else if(timer === 0)(figure out why later)
             if(timer === 0 || timer < 0){
+                timer = 0;
                 socket.emit('time_server', timer);
                 clearInterval(ChatCountdown);
+
             }
             }, 1000);
 
@@ -87,6 +89,7 @@ MongoClient.connect(url, function (err, db) {
     var top3FoodArray = 0;
     var top3 = [];
     var top3Arrays = [];
+    var top3NameArrays = [];
 
 
     server.listen(port, () => {
@@ -98,33 +101,48 @@ MongoClient.connect(url, function (err, db) {
             collection.aggregate([{$group: {_id: "$text", MyResults: {$sum: 1}}}]).toArray(function (err, data) {
 
                 //puts all the count of each food in an array through numbers
-                for(var i =0; i < data.length; i++){
+                for(var i = 0; i < data.length; i++){
                     if(data[i].MyResults > topFood){
                         topFoodArray = i;
                     }
+                    /*
+                    else if(data[i].MyResults < topFood){
+                        top3FoodArray = i;
+                    }*/
                     top3Arrays.push(data[i].MyResults)
                 }
-                //#TODO SHIT IT MESSY HERE TRY TO GET TOP 3
+
+                for(var y = 0; y < topFoodArray; y++){
+                    if(data[y].MyResults > topFood2){
+                        top2FoodArray = y;
+                    }
+                }
+
+
+                for(var z = 0; z < top2FoodArray; z++){
+                    if(data[z].MyResults > topFood3){
+                        top3FoodArray = z;
+                    }
+                }
+
                 console.log("All Counts: " + top3Arrays);
+                console.log("All Name Counts: " + top3NameArrays);
                 // this gets the MyResult top 3 (not the id)
                 var topValues = top3Arrays.sort((a,b) => a<b).slice(0,3);
                 //now that got top 3 MyResult, get its respective id
                 console.log("Top 3 Counts: " + topValues);
                 console.log("Top 1 Count respective MyResult: " + topValues[0]);
-
-                for(var y=0; y<topValues.length; y++){
-                    top3[y] = data[y];
-                    console.log("HERE "+data[topValues[y]]);
-                }
+                console.log();
+                console.log("-----------------------------");
 
 
                 topFood = data[topFoodArray]._id;
-                topFood2 = data[top2FoodArray]._id;
-                topFood3 = data[top3FoodArray]._id;
+                topFood2 = data[top2FoodArray-1]._id;
+                topFood3 = data[top3FoodArray-1]._id;
                 top3[0] = topFood;
                 top3[1] = topFood2;
                 top3[2] = topFood3;
-                console.log("Top Food: " + top3[0]);
+                console.log("Top Food: " + top3);
                 res.json(top3);
             })
         });
