@@ -58,17 +58,18 @@
         }
 
         #overlay {
-            position: fixed; /* Sit on top of the page content */
-            display: none; /* Hidden by default */
-            width: 100%; /* Full width (cover the whole page) */
-            height: 100%; /* Full height (cover the whole page) */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.5); /* Black background with opacity */
-            z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
-            cursor: pointer; /* Add a pointer on hover */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: 50px;
+            color: black;
+            transform: translate(-50%,-50%);
+            -ms-transform: translate(-50%,-50%);
+            display:inline-block;
+            width: 33%;
+        }
+
+        div.topfood{
         }
 
     </style>
@@ -103,13 +104,11 @@
 
     <!--Overlay that will appear once time is up-->
     <div id="overlay">
-        <div class="topfood"></div>
+        <h1>You should definitely go for some: <span id="topFood"></span> </h1>
     </div>
 
 </div>
 
-<div class="temp">
-</div>
 
 <div class ="timer">
 </div>
@@ -160,22 +159,21 @@
         $('#server_messages').html($('<li>)').text(serverMsg));
     });
 
-
-
-
-
-
+    // we do the stuff needed here because this gets info from time_server from the server and
+    // the important stuff are sent through time_server connection
     socket.on('time_server', (time)=>{
         $('div.timer').html(time);
         var timeZero = time !== 0;
         $('#message-form').toggle(timeZero);
-        if(time === 0){
+        if(time === 0){ // so if timer goes to 0, show the results of the convo
             resultsOn()
             fetch('/get-data')
                 .then(response => response.json())
                 .then(data => {
                     topFood = data;
-                    $('div.topfood').html(topFood);
+                    topFood = topFood.charAt(0).toUpperCase() + topFood.slice(1);
+                    document.getElementById("topFood").innerHTML = topFood;
+                    //$('div.topfood').html(topFood);
                 });
         }
         else if(time > 0){
