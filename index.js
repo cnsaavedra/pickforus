@@ -14,7 +14,7 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 999;
+    var timer = 5;
     var topWords = [];
 
 
@@ -93,14 +93,14 @@ MongoClient.connect(url, function (err, db) {
     app.get('/get-data', function(req, res, next) {
         db.collection("messages", function (err, collection) {
             collection.aggregate([{$group: {_id: "$text", MyResults: {$sum: 1}}}]).toArray(function (err, data) {
-                res.json(data);
                 for(var i =0; i < data.length; i++){
                     if(data[i].MyResults > topFood){
                         topFoodArray = i;
                     }
                 }
                 topFood = data[topFoodArray]._id;
-                console.log(topFood);
+                console.log("Top Food: " + topFood);
+                res.json(topFood);
             })
         });
     });

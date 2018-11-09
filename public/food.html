@@ -100,27 +100,18 @@
     </div>
 
 
-    <section class="get">
-        <h3>Get Data</h3>
-        <a href="/get-data">LOAD DATA</a>
-        <div>
-            <article class="item">
-                <div>ID: {{ this._id }}</div>
-            </article>
-        </div>
-    </section>
 
     <!--Overlay that will appear once time is up-->
     <div id="overlay">
         <div class="topfood"></div>
     </div>
 
-
 </div>
 
+<div class="temp">
+</div>
 
 <div class ="timer">
-
 </div>
 
 
@@ -142,6 +133,7 @@
 <script>
     const room = "food";
     const socket = io.connect('/tech');
+    var topFood;
 
     //for overlay
     function resultsOn() {
@@ -168,22 +160,29 @@
         $('#server_messages').html($('<li>)').text(serverMsg));
     });
 
+
+
+
+
+
     socket.on('time_server', (time)=>{
         $('div.timer').html(time);
         var timeZero = time !== 0;
         $('#message-form').toggle(timeZero);
         if(time === 0){
             resultsOn()
+            fetch('/get-data')
+                .then(response => response.json())
+                .then(data => {
+                    topFood = data;
+                    $('div.topfood').html(topFood);
+                });
         }
         else if(time > 0){
             resultsOff()
         }
     });
 
-    socket.on('top_food', (top)=>{
-        $('div.topfood').html(top);
-
-    });
 
 </script>
 
