@@ -112,21 +112,25 @@ MongoClient.connect(url, function (err, db) {
                         if(data[i].MyResults > topFood){
                             topFoodArray = i;
                         }
-                        /*
-                        else if(data[i].MyResults < topFood){
-                            top3FoodArray = i;
-                        }*/
                         top3Arrays.push(data[i].MyResults);
                         top3NameArrays.push(data[i]._id);
                     }
-
                     top3[0] = top3NameArrays[0];
                     top3[1] = top3NameArrays[1];
                     top3[2] = top3NameArrays[2];
 
+                    function hasDuplicates(array) {
+                        return (new Set(array)).size !== array.length;
+                    }
 
+                    if(hasDuplicates(top3Arrays)){
+                        res.json({top3: top3, duplicate: true});
+                    }
+                    else if(!hasDuplicates(top3Arrays)){
+                        res.json({top3: top3, duplicate: false});
+                    }
                     console.log("Top Food: " + top3);
-                    res.json(top3);
+
                 });
             });
 
