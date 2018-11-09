@@ -104,7 +104,13 @@
 
     <!--Overlay that will appear once time is up-->
     <div id="overlay">
-        <h1>You should definitely go for some: <span id="topFood"></span> </h1>
+        <h1>Top 3:</h1>
+        <ol type="1">
+            <li><span class="topFood1"></span></li>
+            <li><span id="topFood2"></span></li>
+            <li><span id="topFood3"></span></li>
+        </ol>
+        <h6>You should definitely go for some: <span id="topFood"></span> </h6>
     </div>
 
 </div>
@@ -112,7 +118,6 @@
 
 <div class ="timer">
 </div>
-
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -133,6 +138,9 @@
     const room = "food";
     const socket = io.connect('/tech');
     var topFood;
+    var topFood1;
+    var topFood2;
+    var topFood3;
 
     //for overlay
     function resultsOn() {
@@ -166,13 +174,27 @@
         var timeZero = time !== 0;
         $('#message-form').toggle(timeZero);
         if(time === 0){ // so if timer goes to 0, show the results of the convo
-            resultsOn()
+            resultsOn();
+
             fetch('/get-data')
                 .then(response => response.json())
                 .then(data => {
-                    topFood = data;
+                    topFood = data[0];
+                    topFood1 = data[0];
+                    topFood2 = data[1];
+                    topFood3 = data[2];
                     topFood = topFood.charAt(0).toUpperCase() + topFood.slice(1);
+                    topFood1 = topFood1.charAt(0).toUpperCase() + topFood1.slice(1);
+                    document.getElementsByClassName("topFood1")[0].innerHTML = topFood1;
                     document.getElementById("topFood").innerHTML = topFood;
+
+                    topFood2 = topFood2.charAt(0).toUpperCase() + topFood2.slice(1);
+                    document.getElementById("topFood2").innerHTML = topFood2;
+
+                    topFood3 = topFood3.charAt(0).toUpperCase() + topFood3.slice(1);
+                    document.getElementById("topFood3").innerHTML = topFood3;
+
+
                     //$('div.topfood').html(topFood);
                 });
         }
