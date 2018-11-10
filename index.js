@@ -15,7 +15,7 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 1;
+    var timer = 60;
 
     tech.on('connection', (socket) => {
         connections.push(socket);
