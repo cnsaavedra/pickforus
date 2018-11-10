@@ -15,7 +15,14 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 60;
+    var timer = 1;
+
+    var topFood = 0;
+    var topFoodArray = 0;
+    var top3 = [];
+    var top3Arrays = [];
+    var top3NameArrays = [];
+
 
     tech.on('connection', (socket) => {
         connections.push(socket);
@@ -33,6 +40,46 @@ MongoClient.connect(url, function (err, db) {
 
             }
             }, 1000);
+
+        app.get('/get-data', function(req, res, next) {
+            db.collection("messages", function (err, collection) {
+                collection.aggregate(
+                    [
+                        { $group : {_id: "$text", MyResults: {$sum: 1}}},
+                        { $out : "rankings" }
+                    ] ).toArray(function (err, data) {
+                });
+                db.collection("rankings", function (err, collection) {
+                    collection.find().sort({MyResults: -1}).toArray(function (err, data) {
+                        //puts all the count of each food in an array through numbers
+                        for(var i = 0; i < data.length; i++){
+                            if(data[i].MyResults > topFood){
+                                topFoodArray = i;
+                            }
+                            top3Arrays.push(data[i].MyResults);
+                            top3NameArrays.push(data[i]._id);
+                        }
+                        top3[0] = top3NameArrays[0];
+                        top3[1] = top3NameArrays[1];
+                        top3[2] = top3NameArrays[2];
+
+                        function hasDuplicates(array) {
+                            return (new Set(array)).size !== array.length;
+                        }
+
+                        if(hasDuplicates(top3Arrays)){
+                            res.json({top3: top3, duplicate: true});
+                        }
+                        else if(!hasDuplicates(top3Arrays)){
+                            res.json({top3: top3, duplicate: false});
+                        }
+                        console.log("Top Food: " + top3);
+                    });
+                });
+
+
+            });
+        });
 
 
 
@@ -75,67 +122,17 @@ MongoClient.connect(url, function (err, db) {
         io.on('disconnect', () => {
             console.log('User Disconnected');
             tech.emit('message', 'User Disconnected');
+            top3 = [];
+            db.close();
         });
 
 
     });
 
     const port = 3000;
-    var topFood = 0;
-    var topFood2 = 0;
-    var topFood3 = 0;
-    var topFoodArray = 0;
-    var top2FoodArray = 0;
-    var top3FoodArray = 0;
-    var top3 = [];
-    var top3Arrays = [];
-    var topNameValues = [];
-    var top3NameArrays = [];
-
 
     server.listen(port, () => {
         console.log('Server is listening on Port: ${port}');
-    });
-
-    app.get('/get-data', function(req, res, next) {
-        db.collection("messages", function (err, collection) {
-            collection.aggregate(
-                [
-                    { $group : {_id: "$text", MyResults: {$sum: 1}}},
-                    { $out : "rankings" }
-                ] ).toArray(function (err, data) {
-            });
-            db.collection("rankings", function (err, collection) {
-                collection.find().sort({MyResults: -1}).toArray(function (err, data) {
-                    //puts all the count of each food in an array through numbers
-                    for(var i = 0; i < data.length; i++){
-                        if(data[i].MyResults > topFood){
-                            topFoodArray = i;
-                        }
-                        top3Arrays.push(data[i].MyResults);
-                        top3NameArrays.push(data[i]._id);
-                    }
-                    top3[0] = top3NameArrays[0];
-                    top3[1] = top3NameArrays[1];
-                    top3[2] = top3NameArrays[2];
-
-                    function hasDuplicates(array) {
-                        return (new Set(array)).size !== array.length;
-                    }
-
-                    if(hasDuplicates(top3Arrays)){
-                        res.json({top3: top3, duplicate: true});
-                    }
-                    else if(!hasDuplicates(top3Arrays)){
-                        res.json({top3: top3, duplicate: false});
-                    }
-                    console.log("Top Food: " + top3);
-
-                });
-            });
-
-
-        });
     });
 
 
