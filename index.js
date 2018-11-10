@@ -28,6 +28,8 @@ MongoClient.connect(url, function (err, db) {
         connections.push(socket);
         console.log("Connections: " + connections.length);
 
+        //#TODO on first iteration results wont appear, previous arrays from previous sessions appear
+        //#TODO maybe for array, make it a session variable?
 
         //FOR TIMER
         var ChatCountdown = setInterval(function(){
