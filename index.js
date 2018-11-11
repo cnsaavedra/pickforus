@@ -16,7 +16,7 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 5;
+    var timer = 20;
 
     var top3 = [];
     var top3Arrays = [];
@@ -47,15 +47,17 @@ MongoClient.connect(url, function (err, db) {
 
         app.get('/get-data', async function(req, res, next) {
             try{
-            await db.collection("messages", function (err, collection) {
+            await db.collection("messages", async function (err, collection) {
                 collection.aggregate(
                     [
                         { $group : {_id: "$text", MyResults: {$sum: 1}}},
                         { $out : "rankings" }
                     ] ).toArray(function (err, data) {
+                    setTimeout(() => next("done!"), 5000)
                 });
-                db.collection("rankings", async function (err, collection) {
+                await db.collection("rankings", async function (err, collection) {
                     await collection.find().sort({MyResults: -1}).toArray(function (err, data) {
+                        next();
                         //puts all the count of each food in an array through numbers
                         for(var i = 0; i < data.length; i++){
                             top3Arrays.push(data[i].MyResults);
