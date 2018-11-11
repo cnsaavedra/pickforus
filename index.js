@@ -4,6 +4,7 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:27017/chat_database';
+var async = require('async');
 
 var router = express.Router();
 var assert = require('assert');
@@ -15,14 +16,16 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 1;
+    var timer = 5;
 
-    var topFood = 0;
-    var topFoodArray = 0;
     var top3 = [];
     var top3Arrays = [];
     var top3NameArrays = [];
 
+
+    function hasDuplicates(array) {
+        return (new Set(array)).size !== array.length;
+    }
 
     tech.on('connection', (socket) => {
         connections.push(socket);
@@ -39,50 +42,46 @@ MongoClient.connect(url, function (err, db) {
                 timer = 0;
                 socket.emit('time_server', timer);
                 clearInterval(ChatCountdown);
-
             }
             }, 1000);
 
-        app.get('/get-data', function(req, res, next) {
-            db.collection("messages", function (err, collection) {
+        app.get('/get-data', async function(req, res, next) {
+            try{
+            await db.collection("messages", function (err, collection) {
                 collection.aggregate(
                     [
                         { $group : {_id: "$text", MyResults: {$sum: 1}}},
                         { $out : "rankings" }
                     ] ).toArray(function (err, data) {
                 });
-                db.collection("rankings", function (err, collection) {
-                    collection.find().sort({MyResults: -1}).toArray(function (err, data) {
+                db.collection("rankings", async function (err, collection) {
+                    await collection.find().sort({MyResults: -1}).toArray(function (err, data) {
                         //puts all the count of each food in an array through numbers
                         for(var i = 0; i < data.length; i++){
-                            if(data[i].MyResults > topFood){
-                                topFoodArray = i;
-                            }
                             top3Arrays.push(data[i].MyResults);
                             top3NameArrays.push(data[i]._id);
+                            top3[i] = top3NameArrays[i];
                         }
-                        top3[0] = top3NameArrays[0];
-                        top3[1] = top3NameArrays[1];
-                        top3[2] = top3NameArrays[2];
-
-                        function hasDuplicates(array) {
-                            return (new Set(array)).size !== array.length;
-                        }
+                        console.log("Top 3: " + top3NameArrays);
 
                         if(hasDuplicates(top3Arrays)){
                             res.json({top3: top3, duplicate: true});
                         }
+
                         else if(!hasDuplicates(top3Arrays)){
                             res.json({top3: top3, duplicate: false});
                         }
+
                         console.log("Top Food: " + top3);
                     });
                 });
-
-
             });
+            }catch(err){
+                console.log(err);
+            }finally{
+                db.close();
+            }
         });
-
 
 
         socket.on('join', (data) => {

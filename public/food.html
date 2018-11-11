@@ -151,23 +151,6 @@
         document.getElementById("overlay").style.display = "none";
     }
 
-    $('form').submit(()=>{
-        let msg= $('#m').val();
-        socket.emit('message', {msg, room});
-        $('#m').val('');
-        return false;
-    });
-    socket.on('connect', ()=>{
-        socket.emit('join', {room: room});
-    });
-    socket.on('message', (msg)=>{
-        $('#messages').append($('<li>').text(msg));
-    });
-
-    socket.on('server_message', (serverMsg)=>{
-        $('#server_messages').html($('<li>)').text(serverMsg));
-    });
-
     // we do the stuff needed here because this gets info from time_server from the server and
     // the important stuff are sent through time_server connection
     socket.on('time_server', (time)=>{
@@ -175,8 +158,6 @@
         var timeZero = time !== 0;
         $('#message-form').toggle(timeZero);
         if(time === 0){ // so if timer goes to 0, show the results of the convo
-            resultsOn();
-
             fetch('/get-data')
                 .then(response => response.json())
                 .then(data => {
@@ -200,15 +181,35 @@
 
                     topFood3 = topFood3.charAt(0).toUpperCase() + topFood3.slice(1);
                     document.getElementById("topFood3").innerHTML = topFood3;
-
-
-                    //$('div.topfood').html(topFood);
                 });
+            resultsOn();
         }
         else if(time > 0){
-            resultsOff()
+            resultsOff();
+            if(topFood !== []){ // if new session, clear the array
+                topFood = [];
+            }
         }
     });
+
+    $('form').submit(()=>{
+        let msg= $('#m').val();
+        socket.emit('message', {msg, room});
+        $('#m').val('');
+        return false;
+    });
+    socket.on('connect', ()=>{
+        socket.emit('join', {room: room});
+    });
+    socket.on('message', (msg)=>{
+        $('#messages').append($('<li>').text(msg));
+    });
+
+    socket.on('server_message', (serverMsg)=>{
+        $('#server_messages').html($('<li>)').text(serverMsg));
+    });
+
+
 
 
 </script>
