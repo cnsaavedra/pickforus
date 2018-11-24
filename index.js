@@ -16,7 +16,7 @@ MongoClient.connect(url, function (err, db) {
 
     const tech = io.of('/tech');
     var connections = [];
-    var timer = 20;
+    var timer = 10;
 
     var top3 = [];
     var top3Arrays = [];
@@ -45,39 +45,56 @@ MongoClient.connect(url, function (err, db) {
             }
             }, 1000);
 
-        app.get('/get-data', async function(req, res, next) {
+        app.get('/get-data', function(req, res, next) {
             try{
-            await db.collection("messages", async function (err, collection) {
-                collection.aggregate(
-                    [
-                        { $group : {_id: "$text", MyResults: {$sum: 1}}},
-                        { $out : "rankings" }
-                    ] ).toArray(function (err, data) {
-                    setTimeout(() => next("done!"), 5000)
-                });
-                await db.collection("rankings", async function (err, collection) {
-                    await collection.find().sort({MyResults: -1}).toArray(function (err, data) {
-                        next();
-                        //puts all the count of each food in an array through numbers
-                        for(var i = 0; i < data.length; i++){
-                            top3Arrays.push(data[i].MyResults);
-                            top3NameArrays.push(data[i]._id);
-                            top3[i] = top3NameArrays[i];
-                        }
-                        console.log("Top 3: " + top3NameArrays);
-
-                        if(hasDuplicates(top3Arrays)){
-                            res.json({top3: top3, duplicate: true});
-                        }
-
-                        else if(!hasDuplicates(top3Arrays)){
-                            res.json({top3: top3, duplicate: false});
-                        }
-
-                        console.log("Top Food: " + top3);
+                db.collection("messages", function (err, collection) {
+                    collection.aggregate(
+                        [
+                            { $group : {_id: "$text", MyResults: {$sum: 1}}},
+                            { $out : "rankings" }
+                        ] ).toArray(function (err, data) {
                     });
+
+                    var myPromise = () => {
+                        return new Promise((resolve, reject) => {
+                            db.collection("rankings", function (err, collection) {
+                                collection.find().sort({MyResults: -1}).toArray(function (err, data) {
+                                    err
+                                        ? reject(err)
+                                        : resolve(data[0]);
+                                });
+                            });
+
+                            var callMyPromise = async () => {
+
+                                var result = await (myPromise());
+                                //anything here is executed after result is resolved
+                                return result;
+                            };
+
+                            callMyPromise().then((function (result) {
+                                result = data;
+                                //puts all the count of each food in an array through numbers
+                                for (var i = 0; i < data.length; i++) {
+                                    top3Arrays.push(data[i].MyResults);
+                                    top3NameArrays.push(data[i]._id);
+                                    top3[i] = top3NameArrays[i];
+                                }
+                                console.log("Top 3: " + top3NameArrays);
+
+                                if (hasDuplicates(top3Arrays)) {
+                                    res.json({top3: top3, duplicate: true});
+                                }
+
+                                else if (!hasDuplicates(top3Arrays)) {
+                                    res.json({top3: top3, duplicate: false});
+                                }
+
+                                console.log("Top Food: " + top3);
+                            }));
+                        });
+                    }
                 });
-            });
             }catch(err){
                 console.log(err);
             }finally{
