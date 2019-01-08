@@ -1,3 +1,17 @@
+# HOW TO RUN
+Prerequisites:
+- Needs mongodb database
+- yarn (or npm, I used yarn)
+
+Steps (in a terminal, I used Visual Studio Code):
+1. git clone https://github.com/cnsaavedra/PickForUs.git
+3. Work on PickForUs directory.
+4. yarn install
+5. yarn start
+
+**Works on localhost:3000**
+
+
 # PickForUs
 Hanging out with friends? Everyone is indecisive and you all don't know where to go? 
 Get everyone on this website and anonymously share your thoughts on what to do for the rest of the day!
