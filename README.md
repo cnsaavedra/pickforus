@@ -25,19 +25,19 @@ And really if everyone is indecisive, who is the leader of the group? THIS WEBSI
 ### You are given 60 seconds to put in your thoughts, therefore the website is trying to get the first thing that comes to you and your friends minds.
 
 ![Image](./meta/foodexamples/mainmenu.png)
-For example if we want to choose a food place, we would select "Picking Food".
-
+- For example if we want to choose a food place, we would select "Picking Food".
+  
 
 ![Image](./meta/foodexamples/chatscreenfood.png)
 
-In this scenario, seems like everyone is okay with whatever. The website analyzes the data and tries to narrow down options and finally giving the best option.
+- In this scenario, seems like everyone is okay with whatever. The website analyzes the data and tries to narrow down options and finally giving the best option.
 
 
 ![Image](./meta/foodexamples/databasefood.png)
 
-From the database, the website narrowed down to only selecting food and checks for the most common cuisine/food (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
+- From the database, the website narrowed down to only selecting food and checks for the most common cuisine/food (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
 
 
-So in the end we are given these options!
+- So in the end we are given these options!
 
 ![Image](./meta/foodexamples/suggestionfood.png)
