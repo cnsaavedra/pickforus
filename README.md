@@ -37,7 +37,6 @@ And really if everyone is indecisive, who is the leader of the group? THIS WEBSI
 
 - From the database, the website narrowed down to only selecting food and checks for the most common cuisine/food (If someone says "I don't want burger" it would detect the "don't want (insert food here)" and would not include burger).
 
-
-- So in the end we are given these options!
-
 ![Image](./meta/foodexamples/suggestionfood.png)
+- So in the end we are given these options!
+- The "You have duplicates, but we fixed that for you" is towards the message that had burger in the same sentence (Or could be spammed by the same guy. Keep in mind if it's from the same guy who wants to spam a certain cuisine/food in the chat then not everyone indecisive and therefore that person can plan the meal for everyone). It is a way to disallow from repeating the same words accidentally.
