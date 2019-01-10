@@ -91,6 +91,7 @@ MongoClient.connect(url, function (err, db) {
         socket.on('join', (data) => {
             socket.join(data.room);
             tech.in(data.room).emit('server_message', connections.length + ' users connected');
+            tech.in(data.room).emit('server_message', 'You have 60 seconds to put in your thoughts!');
         });
 
         socket.on('message', (data) => {
