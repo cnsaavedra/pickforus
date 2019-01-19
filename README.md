@@ -1,6 +1,6 @@
 # HOW TO RUN
 Prerequisites:
-- Needs mongodb database
+- Needs mongodb database (var url = 'mongodb://localhost:27017/chat_database';) where chat_database is the database name.
 - yarn (or npm, I used yarn)
 
 Steps (in a terminal, I used Visual Studio Code):
