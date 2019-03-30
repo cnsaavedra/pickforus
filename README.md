@@ -1,4 +1,5 @@
 # HOW TO RUN
+## Please notice that the integration of React is underway, please go back to version committed before Jan 19, 2019.
 Prerequisites:
 - Needs mongodb database (var url = 'mongodb://localhost:27017/chat_database';) where chat_database is the database name.
 - yarn (or npm, I used yarn)
