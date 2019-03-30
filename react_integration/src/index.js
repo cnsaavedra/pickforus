@@ -1,5 +1,6 @@
 import React from "react";
 import { render } from "react-dom";
-import App from "./components/Main";
+import Main from "./components/Main";
+import 'typeface-roboto';
 
-render(<App />, document.getElementById('root'));
+render(<Main />, document.getElementById('root'));
