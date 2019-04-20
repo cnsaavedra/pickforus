@@ -1,17 +1,13 @@
-import React from "react";
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
-import 'typeface-roboto';
-import Food from "./Food";
+import React from "react"
+import { BrowserRouter as Router, Route, Link } from "react-router-dom"
+import 'typeface-roboto'
+import Food from "./Food"
 
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
-
-function ListItemLink(props) {
-  return <ListItem button component="a" {...props} />;
-}
 
 function Destination() {
   return <h2>Destination</h2>;
@@ -25,7 +21,7 @@ function Header() {
   return (
     <div>
       <List component="nav">
-          <ListItem component={Link} to="/Food" button>
+          <ListItem component={Link} to="/food" button>
             <ListItemIcon>
               <MenuIcon />
             </ListItemIcon>
@@ -63,8 +59,8 @@ export default class Main extends React.Component {
             <Router>
               <div>
                 <Header />
-                <Route path="/Food" exact component={Food} />
-                <Route path="/Destination" component={Destination} />
+                <Route path="/food" exact component={Food} />
+                <Route path="/destination" component={Destination} />
                 <Route path="/pick" component={Pick} />
               </div>
               </Router>

@@ -136,17 +136,10 @@ MongoClient.connect(url, function (err, db) {
 
 
     app.get('/', (req, res) => {
-        res.sendFile(__dirname + '/public/index.html');
+        res.sendFile(__dirname + '/components/Main.js');
     });
 
     app.get('/food', (req, res) => {
-        res.sendFile(__dirname + '/public/food.html');
+        res.sendFile(__dirname + '/components/Food.js');
     });
-    app.get('/destination', (req, res) => {
-        res.sendFile(__dirname + '/public/destination.html');
-    });
-    app.get('/pickforusplease', (req, res) => {
-        res.sendFile(__dirname + '/public/pickforusplease.html');
-    });
-
 });
