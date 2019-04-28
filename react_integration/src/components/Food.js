@@ -1,9 +1,7 @@
-import io from 'socket.io-client';
 import React, {Component} from 'react';
 import MessageBox from "./Message/MessageBox"
 import MessageList from "./Message/MessageList"
-
-const socket = io.connect('/tech');
+import { socket } from "./Main";
 const room = "food";
 
 export default class Food extends Component{

@@ -8,6 +8,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
+import socketIOClient from "socket.io-client";
 
 function Destination() {
   return <h2>Destination</h2>;
@@ -43,9 +44,17 @@ function Header() {
     </div>
   )
 }
+var socket;
+class Main extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      endpoint: 'http://localhost:3001/'
+    }
+    socket = socketIOClient(this.state.endpoint);
+  }
 
-export default class Main extends React.Component {
-  render(){
+  render() {
     return (
       <div>
         <meta charSet="UTF-8" />
@@ -72,5 +81,4 @@ export default class Main extends React.Component {
     )
   }
 }
-
-
+export { Main, socket }

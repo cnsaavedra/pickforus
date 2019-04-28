@@ -1,16 +1,17 @@
-const app = require('express')();
-var express = require('express');
-const server = require('http').Server(app);
-const io = require('socket.io')(server);
+const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
+
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:27017/chat_database';
-
 
 MongoClient.connect(url, function (err, db) {
     var messagesCollection = db.collection('messages');
 
+    const app = express();
+    const server = http.createServer(app);
+    const io = socketIO(server);
 
-    const tech = io.of('/tech');
     var connections = [];
     var timer = 60;
 
@@ -23,7 +24,7 @@ MongoClient.connect(url, function (err, db) {
         return (new Set(array)).size !== array.length;
     }
 
-    tech.on('connection', (socket) => {
+    io.on('connection', (socket) => {
         connections.push(socket);
         console.log("Connections: " + connections.length);
 
@@ -83,8 +84,8 @@ MongoClient.connect(url, function (err, db) {
     
         socket.on('join', (data) => {
             socket.join(data.room);
-            tech.in(data.room).emit('server_message', connections.length + ' users connected');
-            tech.in(data.room).emit('server_message', 'You have 60 seconds to put in your thoughts!');
+            io.in(data.room).emit('server_message', connections.length + ' users connected');
+            io.in(data.room).emit('server_message', 'You have 60 seconds to put in your thoughts!');
         });
 
         socket.on('message', (data) => {
@@ -114,13 +115,13 @@ MongoClient.connect(url, function (err, db) {
                     }
                 }
             }
-            tech.in(data.room).emit('message', data.msg);
+            io.in(data.room).emit('message', data.msg);
         });
 
 
         io.on('disconnect', () => {
             console.log('User Disconnected');
-            tech.emit('message', 'User Disconnected');
+            io.emit('message', 'User Disconnected');
             top3 = [];
             db.close();
         });
@@ -128,7 +129,7 @@ MongoClient.connect(url, function (err, db) {
 
     });
 
-    const port = 3000;
+    const port = process.env.PORT || 3000;
 
     server.listen(port, () => {
         console.log('Server is listening on Port: ${port}');
