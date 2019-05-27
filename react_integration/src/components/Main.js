@@ -49,7 +49,7 @@ class Main extends React.Component {
   constructor() {
     super();
     this.state = {
-      endpoint: 'http://localhost:3001/'
+      endpoint: 'http://localhost:3000/'
     }
     socket = socketIOClient(this.state.endpoint);
   }
