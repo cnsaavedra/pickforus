@@ -141,11 +141,11 @@ MongoClient.connect(url, function (err, db) {
 
 
         app.get('/', (req, res) => {
-            res.sendFile(__dirname + '../src/components/Main.js');
+            res.sendFile(__dirname, '../src/components/Main.js');
         });
 
         app.get('/food', (req, res) => {
-            res.sendFile(__dirname + '../src/components/Food.js');
+            res.sendFile(__dirname, '../src/components/Food.js');
         });
     }
 });
