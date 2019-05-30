@@ -4,11 +4,6 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:27017/chat_database';
-var async = require('async');
-
-var router = express.Router();
-var assert = require('assert');
-var mongo = require('mongodb');
 
 MongoClient.connect(url, function (err, db) {
     var messagesCollection = db.collection('messages');
