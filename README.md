@@ -1,79 +1,79 @@
 # PickForUs
 
-> **An LLM-style natural-language group decision app conceived in 2018–2019 — four years before modern chat models — rebuilt in 2026 with a hybrid neuro-symbolic + local LLM decision engine.**
+> **A 2018–2019 anonymous group-chat decision app — preserving the original UI/UX, powered primarily by classical NLP & Approval Voting (no LLM cheating), with local Qwen (`qwen3.5:9b`) strictly as an out-of-dictionary fallback.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](LICENSE)
 [![Node >= 22](https://img.shields.io/badge/Node-%3E%3D22-339933.svg)](package.json)
 [![TypeScript 5.8](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg)](tsconfig.json)
-[![Local LLM: Ollama](https://img.shields.io/badge/Local%20LLM-Ollama%20qwen3.5%3A9b-0f766e.svg)](docs/RESEARCH-AND-METHODS.md)
+[![Primary Engine: Classical NLP + Approval Voting](https://img.shields.io/badge/Primary%20Engine-NegEx%20%2B%20Approval%20Voting-17a2b8.svg)](docs/RESEARCH-AND-METHODS.md)
+[![Fallback LLM: Ollama qwen3.5:9b](https://img.shields.io/badge/Fallback-Ollama%20qwen3.5%3A9b-28a745.svg)](docs/RESEARCH-AND-METHODS.md)
 
-[Live Walkthrough](#live-walkthrough) · [2019 vs 2026 Evolution](#from-2019-pre-llm-experiment-to-2026-reality) · [Research & Methods](#research--engineering-methods) · [Quickstart](#quickstart) · [Technical Case Study](docs/RESEARCH-AND-METHODS.md) · [2019 Archive Branch](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)
+[Live Walkthrough](#live-walkthrough) · [Same 2019 UI/UX, Improved](#same-2019-uiux-improved) · [The Classical Algorithm](#the-classical-algorithm-no-llm-cheating) · [Quickstart](#quickstart) · [Technical Case Study](docs/RESEARCH-AND-METHODS.md) · [2019 Archive Branch](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)
 
 ---
 
 Hanging out with friends, everyone is starving, and every message in the group chat is *"idk, whatever you guys want"*?
 
-**PickForUs** turns a chaotic **60-second anonymous blitz chat** into a decisive group verdict. Instead of forcing friends to build a structured poll, everyone dumps raw gut cravings and hard vetoes before politeness stalls the conversation. When the clock hits zero, PickForUs becomes the group's decisive leader: it filters filler chatter, honors exclusions (*"please I don't want burger again"*), collapses single-person spam (*"ramen ramen ramen!!"*), crowns a winner, and opens Google Maps.
+**PickForUs** turns a chaotic **60-second anonymous blitz chat** into a decisive group verdict. Instead of forcing friends to build a structured poll, everyone dumps raw gut cravings and hard vetoes before politeness stalls the conversation. When the timer hits `0`, PickForUs acts as the group leader: it strips filler chatter, honors exclusions (*"please I don't want burger again"*), collapses single-person spam (*"ramen ramen ramen!!"*), crowns a winner, and opens food or map suggestions.
 
 ---
 
 ## Live Walkthrough
 
-![PickForUs v3 live 60-second blitz walkthrough with local Ollama qwen3.5:9b](./docs/media/pickforus-demo.gif)
+![PickForUs v3 live 60-second blitz walkthrough preserving the classic 2019 UI/UX](./docs/media/pickforus-demo.gif)
 
-| 1. Create or Join Room (`Picking Food` / `Destination` / `Pick For Us`) | 2. 60-Second Anonymous Gut Feed | 3. Hybrid Local Qwen Verdict + Vetoes + Maps |
+| 1. Main Menu (`Picking Food` / `Destination` / `Pick For Us`) | 2. Anonymous Pill Feed + Boxed Timer | 3. Centered Dashed `Top 3:` Overlay |
 | :---: | :---: | :---: |
-| ![PickForUs v3 Lobby](./docs/media/v3-lobby.png) | ![PickForUs v3 Live Blitz Chat](./docs/media/v3-live-blitz.png) | ![PickForUs v3 Verdict Panel](./docs/media/v3-verdict.png) |
-| Live `/api/health` badge detects local Ollama (`qwen3.5:9b`) or instant rules mode. | Per-tab anonymous aliases (`Dizzy Penguin`, `Breezy Alpaca`) stream in real time over `/ws`. | Honors vetoes (`No Burgers`, `No Sushi`), collapses repeat spam (`2 friends · 5 mentions`), and builds a Maps link. |
+| ![PickForUs Main Menu](./docs/media/v3-lobby.png) | ![PickForUs Live Chat](./docs/media/v3-live-blitz.png) | ![PickForUs Dashed Verdict Overlay](./docs/media/v3-verdict.png) |
+| Classic white canvas and three `#17a2b8` teal buttons that start a 60s room immediately. | Top-right black-bordered integer timer, sky-blue server pills, grey anonymous bubbles, green `Send` bar. | Centered black-dashed `Top 3:` box honoring `"don't want"` exclusions and spam dedup in `<2ms`. |
 
 ---
 
-## From 2019 Pre-LLM Experiment to 2026 Reality
+## Same 2019 UI/UX, Improved
 
-In **October 2018 – May 2019**, PickForUs ([preserved on `v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)) tackled a problem that naturally required **Natural Language Understanding** years before instruction-tuned LLMs existed:
+In **October 2018 – May 2019**, PickForUs ([preserved on `v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)) pioneered a minimalist three-screen UI around raw natural-language group chat—years before instruction-tuned LLMs existed. The v3 revival keeps that exact UI/UX intact while fixing every underlying engine and transport flaw:
 
-- **2019 Original Vision ([`v1-2019-archive` README](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/README.md)):** Anonymously collect 60 seconds of free-form friend chat, automatically understand negations (*"I don't want burger"*), catch spam duplicates (*"You have duplicates, but we fixed that for you"*), and suggest the top choice.
-- **Why 2019 Broke on Real Chat:** Without LLMs, [`index.js`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/index.js) split messages on spaces (`msg.split(" ")`), discarded every word `<= 3` characters (dropping `pho`, `bbq`, `pie`, `sub`), filtered only 4 stopwords (`want`, `some`, `have`, `test`), had no negation logic (counting `"I don't want burger"` as **+1 for `burger`**), ran a single global timer across sockets, closed MongoDB after round one, and hardcoded `"topFood"` into the Google link.
-
-| Dimension | 2019 Prototype (`v1-2019-archive`) | 2026 Revival (`v3`, current `master`) |
+| Screen / Feature | 2019 Original (`v1-2019-archive`) | 2026 Improved (`master`) |
 | :--- | :--- | :--- |
-| **Lobby & Modes** | ![2019 Menu](./meta/foodexamples/mainmenu.png) | Shareable 4-letter room codes (`/room/:code`), mode switching, 1-click 4-friend simulator. |
-| **Chat & Timer** | ![2019 Chat](./meta/foodexamples/chatscreenfood.png) | Isolated per-room `1s` clock, single-flight `1 -> 0` lock, WebSocket + HTTP fallback, round resets. |
-| **Decision Engine** | Space splitter (`length > 3`), broken `"don't want"` handling, leaked global `top3[]`. | **Clause-aware negation + per-speaker spam dedup + schema-constrained Ollama `qwen3.5:9b`.** |
-| **Verdict Output** | ![2019 Results](./meta/foodexamples/suggestionfoodv2.png) | Ranked Top 3 (`unique friends` vs `mentions`), veto explanation chips, verified Google Maps search link. |
+| **Main Menu** | ![2019 Menu](./meta/foodexamples/mainmenu.png) | Preserves the centered white canvas + 3 `#17a2b8` teal buttons; adds shareable 4-letter room join and engine status line. |
+| **Chat & Timer** | ![2019 Chat](./meta/foodexamples/chatscreenfood.png) | Preserves the top-right black-bordered countdown box, light-blue server pills, anonymous grey chat bubbles, and green `Send` bar; isolates timer + chat per room code (`?room=CODE`). |
+| **Results Overlay** | ![2019 Results](./meta/foodexamples/suggestionfoodv2.png) | Preserves the centered black-dashed `Top 3:` box, `"You have duplicates, but we fixed that for you :)"`, and teal suggestion link; fixes `"topFood"` URL bug and displays `"don't want"` exclusions cleanly. |
+| **Decision Engine** | Space-splitter (`length > 3`), broken `"don't want"` handling, leaked `top3[]`. | **Classical Gazetteer + Fuzzy Levenshtein + NegEx Clause Negation + Combined Approval Voting** (`<2ms`), with local Ollama `qwen3.5:9b` strictly as out-of-dictionary fallback. |
 | **Persistence** | External `mongodb://localhost:27017` closed after `/get-data`. | Zero-config built-in Node SQLite (`node:sqlite` `DatabaseSync`) isolated per `(room_code, round_number)`. |
 
 ---
 
-## Research & Engineering Methods
+## The Classical Algorithm (No LLM Cheating)
 
-Rather than blindly trusting an unconstrained LLM prompt (which can hallucinate candidates or accidentally crown a vetoed food), PickForUs v3 combines **symbolic linguistic invariants** with **JSON-schema-constrained local LLM inference** inside [`src/server/extractor.ts`](src/server/extractor.ts):
+What 2019 PickForUs was actually trying to build—without an LLM—is a **two-stage classical NLP + Social Choice pipeline** inside [`src/server/extractor.ts`](src/server/extractor.ts):
+
+1. **Gazetteer Phrase Extraction + Damerau-Levenshtein Fuzzy Matching:**
+   Matches multi-word and short entities (`bubble-tea`, `rice-bowls`, `pho`, `bbq`, `pie`, `sub`, `tea`) longest-first on word boundaries, plus edit-distance-`<= 1` typo recovery on `>= 5`-letter words (`"spagetti"` -> `Spaghetti`, `"ramne"` -> `Ramen`, `"burgr"` -> `Burgers`) while ignoring conversational stopwords.
+2. **NegEx Clause-Scope Negation (Chapman et al., 2001):**
+   Segments sentences at punctuation and contrastive conjunctions (`but`, `though`, `except`, `instead of`) so negation triggers (`don't want`, `no`, `skip`, `had ... yesterday`) apply strictly within their clause—meaning `"I don't want burger, maybe pho"` vetoes `Burgers` and votes `+1` for `Pho`.
+3. **Combined Approval Voting with Veto (`{-1, 0, +1}`, Brams & Fishburn 1978; Felsenthal 1989):**
+   Each participant gets one bounded ternary ballot per candidate across the round:
+   - Mentioning `"ramen or tacos"` casts `+1` approval on both (no vote-splitting).
+   - Filler like `"idk whatever"` casts `0` (neutral abstention).
+   - Spamming `"ramen ramen ramen!!"` is idempotent per `participantId` (max `+1` supporter vote, flagging `You have duplicates, but we fixed that for you :)`).
+   - Any `-1` veto disqualifies that option before ranking `Top 3`.
+4. **Local LLM Strictly as Fallback:**
+   In default `auto` mode, the classical algorithm runs **first** (`<2ms`, zero LLM calls). Local Ollama (`qwen3.5:9b`) is called **only** when a chat produces `0` classical candidates yet contains unrecognized non-stopword terms (e.g., an unlisted restaurant name or slang)—and even then, deterministic vetoes override any unsafe LLM pick.
 
 ```mermaid
 flowchart LR
-    Chat["Anonymous Room Chat Messages"] --> Clauses["Clause Splitter (comma, but, except, instead of)"]
-    Clauses --> Neg["Negation Guard (don't want, no, skip, had yesterday)"]
-    Clauses --> Lex["Word-Boundary Lexicon + Open-Vocab Triggers"]
-    Neg --> VetoSet["Hard Veto Set + Speaker Deduplication"]
-    Lex --> VetoSet
-    Chat --> Ollama["Local Ollama qwen3.5:9b (JSON Schema + think=false)"]
-    Ollama --> Intersect["Symbolic Safety Filter (Reject Vetoed + Stopwords)"]
-    VetoSet --> Intersect
-    Ollama -- "Offline or Timeout" --> Rules["Deterministic Fallback (<5 ms)"]
-    VetoSet --> Rules
-    Intersect --> Verdict["Winner + Top 3 + Veto Chips + Maps URL"]
-    Rules --> Verdict
+    Chat["Anonymous Room Chat"] --> Clauses["Clause Splitter (comma, but, except, instead of)"]
+    Clauses --> Neg["NegEx Scope Guard (don't want, no, skip, had yesterday)"]
+    Clauses --> Lex["Gazetteer + Damerau-Levenshtein <= 1"]
+    Neg --> CAV["Combined Approval Voting (-1, 0, +1 per friend)"]
+    Lex --> CAV
+    CAV -- "Known options or filler (<2ms)" --> Overlay["Dashed Top 3 Overlay + Suggestions"]
+    CAV -- "0 options & unseen words" --> Qwen["Fallback: Local Ollama qwen3.5:9b"]
+    Qwen --> Filter["Intersect with Deterministic Vetoes"]
+    Filter --> Overlay
 ```
 
-### Core Methods Implemented & Verified
-
-1. **Behavioral Time-Boxing (60s Anonymous Gut Extraction):** Random per-tab aliases (`sessionStorage`) decouple identity from cravings, while the 60-second timer suppresses polite stalemates.
-2. **Clause-Level Negation & Short-Token Recovery:** Messages are segmented on punctuation and contrastive conjunctions (`but`, `except`, `though`, `instead of`) before negation cues are tested—so `"I don't want burger, maybe pho"` vetoes `Burgers` while counting `+1` for `Pho` (`\b` boundary matching preserves `pho`, `bbq`, `pie`, `sub`, `tea` without matching `"tea"` inside `"steak"`).
-3. **Per-Participant Spam Invariance:** Unique `Set<participantId>` voting caps every participant at `1` positive vote per option while exposing raw `mentions` (`2 friends · 5 mentions`) and flagging spam (`duplicateDetected`).
-4. **Constrained Local LLM + Symbolic Guardrail:** In `auto` mode, [`extractWithOllama`](src/server/extractor.ts) calls local `http://127.0.0.1:11434/api/chat` with `stream: false`, `think: false`, a strict `OLLAMA_JSON_SCHEMA`, and a `25000ms` cold-load budget (measured at `~12.1s` cold VRAM load / `~3.4s` warm eval for `qwen3.5:9b`). Output is intersected against the deterministic veto and stopword sets so the model cannot elect an excluded option.
-5. **4-Part Counterfactual Verification:** Verified via 13 automated tests ([`tests/extractor.test.ts`](tests/extractor.test.ts), [`tests/server.test.ts`](tests/server.test.ts)) spanning Domain Complement, Sign & Direction Symmetry, `1 -> 0` Single-Flight Edge Locking across 3 concurrent WebSocket clients, and Multi-Round SQLite isolation.
-
-Read the full engineering & methodology writeup in [**`docs/RESEARCH-AND-METHODS.md`**](docs/RESEARCH-AND-METHODS.md).
+Read the full mathematical & engineering breakdown in [**`docs/RESEARCH-AND-METHODS.md`**](docs/RESEARCH-AND-METHODS.md).
 
 ---
 
@@ -88,7 +88,7 @@ npm install
 npm run dev
 ```
 
-Open **`http://localhost:3000`** (single-port server hosting Express REST routes, WebSocket `/ws`, and Vite HMR). Click **Create Room** and then **Load 4-Friend Demo** to test a multi-friend round solo in one click.
+Open **`http://localhost:3000`**, click **Picking Food**, and click **Load Demo Chat** (or open a second tab on the copied invite URL) and hit **Finish Now** to see the instant classical decision.
 
 For production build & launch:
 
@@ -99,13 +99,13 @@ npm start
 
 On Windows, double-click **`start-pickforus.cmd`** (includes an automatic `PATH` guard if user environment variables exceed `cmd.exe`'s 8191-character limit).
 
-### 2. Optional Local LLM & Config Overrides
+### 2. Optional Fallback & Config Overrides
 
-If [Ollama](https://ollama.com/) is running locally with `qwen3.5:9b` (`ollama pull qwen3.5:9b`), PickForUs detects it automatically via `/api/health`; otherwise it runs seamlessly on the deterministic engine. Copy `.env.example` to `.env` to customize:
+If [Ollama](https://ollama.com/) is running locally with `qwen3.5:9b` (`ollama pull qwen3.5:9b`), it automatically serves as the out-of-dictionary fallback; otherwise PickForUs runs 100% deterministically. Copy `.env.example` to `.env` to customize:
 
 ```env
 PORT=3000
-PICKFORUS_LLM_MODE=auto        # auto | ollama | rules
+PICKFORUS_LLM_MODE=auto        # auto (rules first, LLM fallback) | rules | ollama
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen3.5:9b
 PICKFORUS_DB_PATH=./data/pickforus.sqlite
@@ -115,7 +115,7 @@ PICKFORUS_DB_PATH=./data/pickforus.sqlite
 
 ```bash
 npm run check   # Biome lint/format + strict TypeScript (noUncheckedIndexedAccess)
-npm test        # 13 Vitest counterfactual + WebSocket/SQLite integration tests
+npm test        # 14 Vitest counterfactual + WebSocket/SQLite integration tests
 npm run build   # Vite client bundle + NodeNext server compile
 ```
 
@@ -123,7 +123,7 @@ npm run build   # Vite client bundle + NodeNext server compile
 
 ## Repository History & License
 
-- **`master` (current):** Revived TypeScript / React 19 / `node:sqlite` / Ollama v3 built cleanly on top of the original 2018–2019 commit graph (zero rewritten history).
+- **`master` (current):** Revived TypeScript / React 19 / `node:sqlite` v3 preserving the 2019 UI/UX on top of the original 2018–2019 commit graph (zero rewritten history).
 - **[`v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive):** Frozen snapshot of the May 2019 prototype (`88641c5`) preserved for historical reference.
 
 Licensed under the [MIT License](LICENSE).

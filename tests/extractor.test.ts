@@ -166,6 +166,37 @@ describe("extractDeterministic", () => {
       mentions: 3,
     });
   });
+
+  it("extracts 2019 demo foods and recovers edit-distance-1 typos without false positives", () => {
+    const retro2019 = extractDeterministic(
+      [
+        msg("p1", "i think i want spaghetti", 1),
+        msg("p2", "or fries idk", 2),
+        msg("p3", "spaghetti sounds good, same with fries", 3),
+        msg("p4", "just want desserts like bubble-tea", 4),
+      ],
+      "food",
+    );
+    expect(retro2019.winner).toBe("Fries");
+    expect(retro2019.top3.map((o) => o.name)).toEqual(
+      expect.arrayContaining(["Fries", "Spaghetti", "Bubble Tea"]),
+    );
+
+    const fuzzyTypos = extractDeterministic(
+      [
+        msg("p1", "spagetti tonight", 1),
+        msg("p2", "ramne sounds nice", 2),
+        msg("p3", "no burgr please", 3),
+        msg("p4", "who is free for the part with hungry friends", 4),
+      ],
+      "food",
+    );
+    expect(fuzzyTypos.vetoed.map((v) => v.name)).toContain("Burgers");
+    expect(fuzzyTypos.top3.map((o) => o.name)).toEqual(
+      expect.arrayContaining(["Spaghetti", "Ramen"]),
+    );
+    expect(fuzzyTypos.top3).toHaveLength(2);
+  });
 });
 
 describe("extractWithOllama & decideRoom", () => {
@@ -208,21 +239,51 @@ describe("extractWithOllama & decideRoom", () => {
     expect(verdict.mapsUrl).toContain("Pho");
   });
 
-  it("falls back seamlessly to deterministic rules when Ollama fails or llmMode is rules", async () => {
+  it("uses classical algorithm first without LLM, escalating to Ollama only for unrecognized terms", async () => {
+    const llmMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: {
+          content: JSON.stringify({
+            winner: "Pierogi",
+            summary: "Two friends pitched Pierogi and Khachapuri.",
+            candidates: [
+              { name: "Pierogi", supporters: 1, quote: "pierogi" },
+              { name: "Khachapuri", supporters: 1, quote: "khachapuri" },
+            ],
+            vetoed: [],
+          }),
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", llmMock);
+
+    // Known gazetteer dishes resolve instantaneously without hitting Ollama
+    const knownMessages = [msg("p1", "kinda craving ramen or pho", 1), msg("p2", "ramen", 2)];
+    const knownAuto = await decideRoom(knownMessages, "food", { llmMode: "auto" });
+    expect(llmMock).not.toHaveBeenCalled();
+    expect(knownAuto.engineUsed).toBe("rules");
+    expect(knownAuto.winner).toBe("Ramen");
+
+    // Out-of-gazetteer dishes trigger Ollama fallback in auto mode
+    const obscureMessages = [msg("p1", "pierogi", 1), msg("p2", "khachapuri", 2)];
+    const fallbackAuto = await decideRoom(obscureMessages, "food", { llmMode: "auto" });
+    expect(llmMock).toHaveBeenCalledTimes(1);
+    expect(fallbackAuto.engineUsed).toBe("ollama");
+    expect(fallbackAuto.winner).toBe("Pierogi");
+
+    // Offline Ollama fallback degrades cleanly to rules even on unrecognized terms
     const failingFetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
     vi.stubGlobal("fetch", failingFetch);
-
-    const messages = [msg("p1", "kinda craving ramen or pho", 1), msg("p2", "ramen", 2)];
-
-    const autoVerdict = await decideRoom(messages, "food", { llmMode: "auto" });
+    const offlineFallback = await decideRoom(obscureMessages, "food", { llmMode: "auto" });
     expect(failingFetch).toHaveBeenCalledTimes(1);
-    expect(autoVerdict.engineUsed).toBe("rules");
-    expect(autoVerdict.winner).toBe("Ramen");
+    expect(offlineFallback.engineUsed).toBe("rules");
+    expect(offlineFallback.winner).toBe("Ramen");
 
+    // Explicit rules mode never invokes Ollama
     failingFetch.mockClear();
-    const rulesVerdict = await decideRoom(messages, "food", { llmMode: "rules" });
+    const rulesOnly = await decideRoom(obscureMessages, "food", { llmMode: "rules" });
     expect(failingFetch).not.toHaveBeenCalled();
-    expect(rulesVerdict.engineUsed).toBe("rules");
-    expect(rulesVerdict.winner).toBe("Ramen");
+    expect(rulesOnly.engineUsed).toBe("rules");
   });
 });

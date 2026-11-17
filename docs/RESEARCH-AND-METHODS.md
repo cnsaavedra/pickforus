@@ -1,6 +1,6 @@
 # PickForUs — Research & Engineering Methods
 
-This document details the behavioral premise, pre-LLM failure modes, neuro-symbolic extraction design, and counterfactual verification framework behind **PickForUs (2018–2026)**.
+This document explains the behavioral premise, the exact classical NLP and voting algorithm that PickForUs (2018–2019) was aiming for without LLMs, the concrete prototype bugs fixed in v3, and how local LLM inference now serves strictly as an out-of-dictionary fallback.
 
 ---
 
@@ -8,84 +8,73 @@ This document details the behavioral premise, pre-LLM failure modes, neuro-symbo
 
 Most group-decision apps ask users to act like product managers: create a poll, type options, wait for votes, and break ties manually. PickForUs (originally prototyped in October 2018 – May 2019 on [`v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)) started from a different behavioral hypothesis:
 
-1. **Time-boxed anonymity breaks politeness deadlock.** Giving friends 60 seconds behind anonymous aliases extracts candid impulses before anyone defaults to *"idk, whatever you want."*
+1. **Time-boxed anonymity breaks politeness deadlock.** Giving friends 60 seconds behind anonymous gray bubbles extracts candid impulses before anyone defaults to *"idk, whatever you want."*
 2. **Free-form chat captures constraints polls miss.** Real people do not type canonical database keys. They type compound, noisy thoughts:
-   - *"idk honestly whatever you guys want"* (filler / indecisiveness)
-   - *"please I don't want burger again, had it yesterday"* (explicit negation + temporal context)
+   - *"idk honestly whatever you guys want"* (filler / neutral abstention)
+   - *"please I don't want burger again, had it yesterday"* (explicit negation + temporal cue)
    - *"kinda craving ramen or pho"* (disjunction + short 3-letter food noun)
    - *"ramen ramen ramen!!"* (single-speaker repetition / spam)
-   - *"down for ramen or tacos, just no sushi"* (positive candidates + trailing veto)
-
-In 2019, there were no accessible local instruction-following LLMs to turn messy chat into structured JSON. Attempting to approximate that capability with basic string operations exposed clear structural boundaries.
+   - *"down for ramen or tacos, just no sushi"* (multiple positive approvals + trailing veto)
 
 ---
 
-## 2. Post-Mortem of Pre-LLM & Early Prototype Gaps
+## 2. The Closest Classical Algorithm (Zero LLM "Cheating")
 
-Inspecting the preserved 2019 codebase ([`index.js`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/index.js) and [`public/food.html`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/public/food.html)) reveals why simple heuristics broke on real group chat:
+Ignoring modern LLMs completely, the exact mathematical system that matches what [`index.js`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/index.js) (`// compare to a dictionary later`) and the 2019 `README.md` were reaching toward is a **two-stage classical NLP + Social Choice algorithm**:
+
+### Stage 1 — Gazetteer Entity Extraction + Damerau-Levenshtein + NegEx Clause Negation
+
+1. **Longest-Phrase Word-Boundary Gazetteer:**
+   Instead of splitting on spaces and discarding `word.length <= 3`, chat text is hyphen-normalized (`bubble-tea` -> `bubble tea`) and matched longest-first against a normalized lexicon on `\b...\b` boundaries. This recovers multi-word dishes (`fried chicken`, `dim sum`, `bubble tea`, `rice bowls`, `dave & busters`) and short items (`pho`, `bbq`, `pie`, `sub`, `tea`) without false substring hits (`"steak"` never triggers `"tea"`).
+2. **Bounded Typo Tolerance (Optimal String Alignment / Damerau-Levenshtein `<= 1`):**
+   On unmatched alphabetic words of length `>= 5` (after filtering stopwords), single-edit typos against `>= 5`-letter lexicon entries are recovered—supporting 1 substitution, 1 insertion/deletion, or 1 adjacent swap (`"spagetti"` -> `Spaghetti`, `"ramne"` -> `Ramen`, `"burgr"` -> `Burgers`) while preventing short English words from matching food names.
+3. **NegEx-Style Clause-Scoped Negation (Chapman et al., 2001):**
+   Each message is split on punctuation (`, ; . ! ? \n`) and contrastive transitions (`but`, `though`, `except`, `instead of`) while keeping compound exclusions (`anything but`, `everything except`) intact. Each clause is tested independently against negation triggers (`don't want`, `do not want`, `anything but`, `except`, `instead of`, `no `, `not `, `skip`, `hate`, `tired of`, `sick of`, `had ... yesterday`, `veto`, `never`, `can't do`), routing negated entities into `vetoed[]` instead of positive votes.
+
+### Stage 2 — Combined Approval Voting with Veto (`{-1, 0, +1}`)
+
+In social choice theory, **Combined Approval Voting** (Brams & Fishburn 1978; Felsenthal 1989) gives each voter an independent `{-1, 0, +1}` evaluation over every candidate:
+
+- **Approve (`+1`):** Saying `"spaghetti or fries"` approves **both** options so friends who are flexible do not split votes.
+- **Abstain (`0`):** Saying `"idk whatever"` or `"anything is fine"` leaves all candidates unaffected.
+- **Idempotent Spam Cap (Max `+1` per Speaker):** Positive votes are tracked as `Set<participantId>` union per canonical option. Repeating `"ramen ramen ramen!!"` across 1 or 5 messages keeps `supporters = 1` for that speaker while incrementing `mentions` and flagging `duplicateDetected` (`"You have duplicates, but we fixed that for you :)"`).
+- **Hard Veto (`-1`):** Any option with `vetoedByCount > 0` is disqualified from winning or appearing in `Top 3` (falling back to an un-vetoed crowd-pleaser only if *every* mentioned option was vetoed).
+- **Deterministic Tie-Breaking:** Ties break by `(supporters DESC, mentions DESC, name ASC)`—or by curated un-vetoed crowd-pleasers when nobody commits (`Pick For Us please`).
+
+---
+
+## 3. Why 2019 Broke on Real Chat (Root-Cause Post-Mortem)
+
+Inspecting [`v1-2019-archive/index.js`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/index.js) and [`public/food.html`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/public/food.html) explains every 2019 bug:
 
 | Category | 2019 Root Cause | Observed Failure | 2026 v3 Resolution |
 | :--- | :--- | :--- | :--- |
-| **Tokenization** | `msg.split(" ")` with `length <= 3` filter | Rejected valid foods (`pho`, `bbq`, `pie`, `sub`, `tea`) while accepting filler (`anything`, `starving`). | Word-boundary lexicon (`\b...\b` sorted longest-first) + open-vocab trigger phrases + explicit stopword set. |
-| **Negation Polarity** | No negation parser despite README design | `"I don't want burger"` inserted `"dont"` and `"burger"` as positive food votes. | Contrastive clause splitting + `NEGATION_PATTERNS` routing negated mentions to `vetoed[]`. |
-| **Spam Resistance** | Raw MongoDB `$sum: 1` across `messages` | One user repeating a word dominated the Top 3 tally (`top3Arrays` only set a boolean after ranking). | Per-`(participantId, candidate)` deduplication: max `1` positive supporter vote per person, raw `mentions` tracked separately. |
-| **Session & Timer Lifecycle** | Global `var timer = 60` + `setInterval` per socket; `db.close()` inside `/get-data` and `disconnect`; global `top3[]` arrays. | Multiple overlapping countdowns, stale votes leaking across sessions, and MongoDB crashing after round 1. | Per-room timer map + single-flight `1 -> 0` lock + `node:sqlite` scoped by `(room_code, round_number)`. |
-| **Action Link** | `elem.href += document.getElementById("topFood").id` | Generated `https://www.google.com/search?q=topFood` instead of the winning restaurant/cuisine. | URL-encoded `mapsUrl` derived from `verdict.winner` and `mode`. |
-| **Transport Framing** | Mid-way React/socket rewrites mixing incompatible socket clients/servers or serving raw `.js` source. | Unhandled WebSocket connections or broken round synchronization. | Single-port Express + `ws` (`noServer: true` on `/ws` only) + Vite middleware / static SPA fallback. |
+| **Tokenization** | `msg.split(" ")` with `length <= 3` drop | Rejected `pho`, `bbq`, `pie`, `sub`, while accepting `"anything"` and `"starving"`. | Longest-first `\b...\b` gazetteer + fuzzy Levenshtein (`<= 1`) + explicit stopword set. |
+| **Negation Polarity** | No negation parser despite README design | `"I don't want burger"` inserted `"dont"` and `"burger"` as positive votes. | Contrastive clause splitting + `NEGATION_PATTERNS` routing negated clauses to `vetoed[]`. |
+| **Spam Resistance** | Raw MongoDB `$sum: 1` across `messages` | One user spamming dominated Top 3 counts. | Per-`(participantId, candidate)` `Set` capping each friend at `1` approval vote. |
+| **Session & Timer Lifecycle** | Global `var timer = 60` + `setInterval` per socket; `db.close()` inside `/get-data` and `disconnect`; global `top3[]`. | Overlapping countdowns, leaked session state, and MongoDB crashing after round 1. | Per-room timer map + single-flight `1 -> 0` lock + `node:sqlite` scoped by `(room_code, round_number)`. |
+| **Action Link** | `elem.href += document.getElementById("topFood").id` | Generated `https://www.google.com/search?q=topFood` instead of the winning food. | URL-encoded `mapsUrl` derived from `verdict.winner` and `mode`. |
 
 ---
 
-## 3. 2026 Hybrid Neuro-Symbolic + Local LLM Architecture
+## 4. Local LLM Strictly as Out-of-Dictionary Fallback
 
-PickForUs v3 does **not** rely on an unguarded LLM prompt alone, nor on brittle word splitting alone. It uses a **two-layer hybrid architecture** in [`src/server/extractor.ts`](../src/server/extractor.ts):
+In `PICKFORUS_LLM_MODE=auto` (default), `decideRoom` runs the classical algorithm (`extractDeterministic`) **first** in `< 2 ms`:
 
-### Layer A — Deterministic Clause & Polarity Engine (`extractDeterministic`)
+1. If `mode === "surprise"`, `messages.length === 0`, or the classical engine extracted `>= 1` positive candidate (`top3.length > 0`), it returns immediately with **`engineUsed: "rules"`** (zero LLM calls).
+2. If chat contains only stopwords or already-vetoed items (no unrecognized substantive words), it also returns deterministically with zero LLM calls.
+3. **Only when `top3.length === 0` AND chat contains unrecognized non-stopword terms** (such as unlisted local restaurants or slang like `"pierogi or khachapuri"`) does `decideRoom` call local Ollama (`qwen3.5:9b`, `stream: false`, `think: false`, JSON-schema `format`, `25000ms` timeout).
 
-1. **Clause Segmentation (`splitIntoClauses`):**
-   Splits each message on punctuation (`, ; . ! ? \n`) and contrastive transitions (`but`, `though`, `except`, `instead of`) while keeping compound negation phrases (`anything but`, `everything except`) intact inside their clause.
-2. **Negation Detection (`isNegatedClause`):**
-   Evaluates each clause independently against negation cues (`don't want`, `do not want`, `anything but`, `except`, `instead of`, `no `, `not `, `skip`, `hate`, `tired of`, `sick of`, `had ... yesterday`, `veto`, `never`, `can't do`). Thus `"I don't want burger, maybe pho"` routes `Burgers` to `vetoed[]` while counting `+1` for `Pho`.
-3. **Word-Boundary Lexicon + Open-Vocab Extraction:**
-   - Lexicon entries are matched longest-first with `\b...\b` boundaries (`"steak"` never triggers `"tea"`, while `"pho"`, `"bbq"`, `"pie"`, `"sub"`, `"dave & busters"` all match cleanly).
-   - Explicit intent triggers (`craving X`, `down for X`, `how about X`, `let's do X`, `go to X`, `want X`) extract unseen cuisines or places (`"tapas"`) after stripping stopwords.
-4. **Per-Participant Identity Deduplication:**
-   Maintains `positiveVoters: Set<string>` and `vetoVoters: Set<string>` keyed by `participantId`. Even if one participant sends `"ramen ramen ramen!!"` across multiple messages, `supporters` stays `1` while `mentions` increments to track enthusiasm and triggers `duplicateDetected = true`.
-5. **Tie-Breaking & Total-Veto Recovery:**
-   In `surprise` mode, when all chat is filler (`"idk whatever"`), or when every mentioned option was vetoed, PickForUs selects the first curated crowd-pleaser not present in `vetoed` so the group never ends in a stalemate.
-
-### Layer B — Schema-Constrained Local LLM (`extractWithOllama`)
-
-When `PICKFORUS_LLM_MODE` is `auto` (default) or `ollama`, [`extractWithOllama`](../src/server/extractor.ts) sends the anonymized `[Alias (participantId)]: message` transcript to `POST /api/chat` on local Ollama (`qwen3.5:9b`) with:
-
-- `stream: false` and `think: false` (eliminating hidden reasoning-token latency in structured JSON extraction),
-- `format: OLLAMA_JSON_SCHEMA` constraining output to `{ winner, summary, candidates[], vetoed[] }`,
-- A `25000ms` timeout (accommodating observed cold VRAM load of `~8.3s` + `~3.4s` generation, while warm calls complete in `~3–4s`).
-
-**Symbolic Post-Validation Invariant:**
-Before any LLM response becomes a `DecisionVerdict`, `extractWithOllama` runs three deterministic guardrails:
-1. Merges deterministic vetoes (`deterministic.vetoed`) with LLM-discovered vetoes (`mergedVetoMap`).
-2. Filters out any candidate or proposed `winner` present in the merged `vetoedSet` or `STOPWORDS`, falling back to un-vetoed candidates or `pickCrowdPleaser`.
-3. Preserves accurate deterministic `mentions` and `duplicateDetected` flags, then constructs a canonical `mapsUrl`.
-
-If Ollama is unreachable, times out, or returns invalid JSON, `extractWithOllama` falls back silently in `< 5 ms` to `extractDeterministic`.
+Even in that fallback path, `extractWithOllama` enforces **symbolic post-validation**: LLM candidates and `winner` are checked against the merged deterministic + LLM `vetoedSet` and `STOPWORDS` so the model can never recommend an excluded item, and offline/timeout errors degrade seamlessly back to `extractDeterministic`.
 
 ---
 
-## 4. Realtime Isolation & Single-Flight State Machine
+## 5. Realtime Isolation & Counterfactual Verification
 
-In [`src/server/app.ts`](../src/server/app.ts):
-
-- **Single-port HTTP + WebSocket + Vite:** `WebSocketServer({ noServer: true })` inspects `upgrade` paths and handles `/ws*` exclusively, allowing Vite HMR (`/__vite_hmr`) in dev and static serving in `--prod` on port `3000`.
-- **Single-Flight Decision Locking (`inFlightDecisions` + `inFlightTokens`):** Both the `1 -> 0` countdown transition and `POST /api/rooms/:code/finish` converge on `finalizeRoom`. Concurrent `/finish` requests share one promise, and a per-execution `Symbol` token prevents an aborted Round 1 flight from clearing Round 2 state after `/reset`.
-- **Zero-Config Persistence (`node:sqlite`):** `PickForUsStore` in [`src/server/db.ts`](../src/server/db.ts) uses Node 22's built-in `DatabaseSync` (`WAL` mode on disk, `:memory:` in tests), isolating chat and verdicts per `(room_code, round_number)`.
-
----
-
-## 5. Counterfactual Verification Matrix
-
-All behaviors are covered by 13 automated tests ([`tests/extractor.test.ts`](../tests/extractor.test.ts) and [`tests/server.test.ts`](../tests/server.test.ts)) plus live headless Chromium + Ollama `qwen3.5:9b` runs:
-
-1. **Domain Complement:** Filler-only chat yields zero hallucinated food nouns and selects a clean crowd-pleaser; short 2–3 letter foods (`pho`, `bbq`, `pie`, `sub`, `tea`) match without substring collisions (`steak` != `tea`).
-2. **Sign & Direction Symmetry:** `"I want burger"` votes `+1` for `Burgers`; `"I don't want burger, maybe pho"` vetoes `Burgers` and crowns `Pho` with `mapsUrl` encoding `Pho`.
-3. **Edge vs Level & Round Isolation:** Timer hitting `0` across 3 connected WebSocket clients executes `decideRoom` once (`toHaveBeenCalledTimes(1)`); WebSocket disconnects leave SQLite open; `POST /api/rooms/:code/reset` advances to Round 2 with zero leaked Round 1 votes.
-4. **Spam Invariance & Adversarial LLM Mock:** 1 participant repeating `"burger"` 5 times (`supporters: 1, mentions: 5`) loses to 2 participants voting `"ramen"` once each (`supporters: 2`); a mocked LLM proposing a vetoed `winner` (`"Burgers"`) is overridden by the symbolic veto filter to elect `"Pho"`.
+- **Single-port HTTP + WebSocket + Vite:** [`src/server/app.ts`](../src/server/app.ts) mounts `WebSocketServer({ noServer: true })` exclusively on `/ws*`, coexisting cleanly with Vite HMR in dev and static assets in `--prod`.
+- **Single-Flight Decision Locking (`inFlightDecisions` + `inFlightTokens`):** Both the `1 -> 0` edge and `POST /api/rooms/:code/finish` share one in-flight decision promise, guarded by a per-round `Symbol` token across `/reset`.
+- **14 Automated Counterfactual & Integration Tests ([`tests/extractor.test.ts`](../tests/extractor.test.ts), [`tests/server.test.ts`](../tests/server.test.ts)):**
+  1. *Domain complement:* filler-only chat yields 0 bogus options; 2–3 char foods (`pho`, `bbq`, `pie`, `sub`, `tea`) + 2019 demo foods (`spaghetti`, `fries`, `bubble-tea`) + edit-distance-1 typos (`spagetti`, `ramne`, `burgr`) resolve with 0 false positives on `"who is free for the part with hungry friends"`.
+  2. *Sign & direction symmetry:* `"I want burger"` approves `Burgers`, while `"I don't want burger, maybe pho"` vetoes `Burgers` and crowns `Pho` with valid `mapsUrl`.
+  3. *Classical-first routing:* Known dishes return `engineUsed: "rules"` with `0` `fetch` calls; out-of-gazetteer terms (`"pierogi"`, `"khachapuri"`) trigger the Ollama fallback and degrade cleanly when offline.
+  4. *Edge vs level & round isolation:* `1 -> 0` across 3 WebSocket clients invokes `decideRoom` once; WebSocket disconnect leaves SQLite open; `/reset` isolates Round 2 cleanly.

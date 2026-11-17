@@ -24,14 +24,21 @@ interface LexiconEntry {
 
 const FOOD_LEXICON: readonly LexiconEntry[] = [
   { pattern: "fried chicken", canonical: "Fried Chicken" },
+  { pattern: "french fries", canonical: "Fries" },
   { pattern: "korean bbq", canonical: "KBBQ" },
-  { pattern: "bubble tea", canonical: "Boba" },
+  { pattern: "bubble teas", canonical: "Bubble Tea" },
+  { pattern: "bubble tea", canonical: "Bubble Tea" },
+  { pattern: "rice bowls", canonical: "Rice Bowls" },
+  { pattern: "rice bowl", canonical: "Rice Bowls" },
   { pattern: "sandwiches", canonical: "Sandwiches" },
   { pattern: "vietnamese", canonical: "Vietnamese" },
+  { pattern: "spaghetti", canonical: "Spaghetti" },
   { pattern: "ice cream", canonical: "Ice Cream" },
   { pattern: "dumplings", canonical: "Dumplings" },
+  { pattern: "desserts", canonical: "Desserts" },
   { pattern: "sandwich", canonical: "Sandwiches" },
   { pattern: "dumpling", canonical: "Dumplings" },
+  { pattern: "dessert", canonical: "Desserts" },
   { pattern: "shawarma", canonical: "Shawarma" },
   { pattern: "japanese", canonical: "Japanese" },
   { pattern: "burritos", canonical: "Burritos" },
@@ -62,6 +69,7 @@ const FOOD_LEXICON: readonly LexiconEntry[] = [
   { pattern: "pasta", canonical: "Pasta" },
   { pattern: "steak", canonical: "Steak" },
   { pattern: "salad", canonical: "Salad" },
+  { pattern: "fries", canonical: "Fries" },
   { pattern: "curry", canonical: "Curry" },
   { pattern: "gyros", canonical: "Gyro" },
   { pattern: "kbbq", canonical: "KBBQ" },
@@ -204,6 +212,59 @@ const STOPWORDS = new Set([
   "super",
   "pretty",
   "much",
+  "hungry",
+  "sounds",
+  "sound",
+  "think",
+  "help",
+  "wants",
+  "wanted",
+  "going",
+  "about",
+  "would",
+  "could",
+  "should",
+  "after",
+  "before",
+  "people",
+  "where",
+  "which",
+  "first",
+  "never",
+  "same",
+  "lets",
+  "let's",
+  "pick",
+  "choose",
+  "who",
+  "are",
+  "free",
+  "part",
+  "though",
+  "but",
+  "except",
+  "instead",
+  "skip",
+  "hate",
+  "tired",
+  "sick",
+  "veto",
+  "had",
+  "has",
+  "did",
+  "didn't",
+  "didnt",
+  "can",
+  "can't",
+  "cant",
+  "was",
+  "were",
+  "craving",
+  "already",
+  "once",
+  "twice",
+  "week",
+  "last",
 ]);
 
 const FOOD_CROWD_PLEASERS = ["Ramen", "Tacos", "Thai", "Pizza", "Dumplings"] as const;
@@ -258,7 +319,10 @@ function buildLexiconRegex(entries: readonly LexiconEntry[]): RegExp {
 }
 
 function canonicalizeName(raw: string): string {
-  const cleaned = raw.trim().toLowerCase();
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    .replace(/([a-z0-9])-([a-z0-9])/gi, "$1 $2");
   for (const entry of ALL_LEXICON) {
     const exact = new RegExp(`^(?:${entry.pattern})$`, "i");
     if (exact.test(cleaned)) {
@@ -306,18 +370,90 @@ function isNegatedClause(clause: string): boolean {
   return NEGATION_PATTERNS.some((pattern) => pattern.test(clause));
 }
 
+function damerauLevenshteinAtMostOne(a: string, b: string): boolean {
+  if (a === b) {
+    return true;
+  }
+  const lenA = a.length;
+  const lenB = b.length;
+  if (Math.abs(lenA - lenB) > 1) {
+    return false;
+  }
+
+  let i = 0;
+  let j = 0;
+  while (i < lenA && j < lenB && a.charCodeAt(i) === b.charCodeAt(j)) {
+    i += 1;
+    j += 1;
+  }
+
+  // Substitution or adjacent transposition on equal-length strings
+  if (lenA === lenB) {
+    if (
+      i + 1 < lenA &&
+      a.charCodeAt(i) === b.charCodeAt(i + 1) &&
+      a.charCodeAt(i + 1) === b.charCodeAt(i)
+    ) {
+      return a.slice(i + 2) === b.slice(j + 2);
+    }
+    return a.slice(i + 1) === b.slice(j + 1);
+  }
+
+  // Single insertion or deletion
+  if (lenA > lenB) {
+    return a.slice(i + 1) === b.slice(j);
+  }
+  return a.slice(i) === b.slice(j + 1);
+}
+
+function findFuzzyLexiconMatch(word: string, entries: readonly LexiconEntry[]): string | null {
+  const lower = word.toLowerCase();
+  if (lower.length < 5 || STOPWORDS.has(lower)) {
+    return null;
+  }
+  for (const entry of entries) {
+    if (!/^[a-z]{5,}$/.test(entry.pattern)) {
+      continue;
+    }
+    if (damerauLevenshteinAtMostOne(lower, entry.pattern)) {
+      return entry.canonical;
+    }
+  }
+  return null;
+}
+
 function matchLexiconInText(text: string, entries: readonly LexiconEntry[]): string[] {
   if (entries.length === 0 || text.trim().length === 0) {
     return [];
   }
+  const normalized = text.replace(/([a-z0-9])-([a-z0-9])/gi, "$1 $2");
   const regex = buildLexiconRegex(entries);
   const matches: string[] = [];
-  for (const match of text.matchAll(regex)) {
+  const matchedSpans: Array<[number, number]> = [];
+
+  for (const match of normalized.matchAll(regex)) {
     const token = match[0];
     if (token !== undefined) {
       matches.push(canonicalizeName(token));
+      const start = match.index ?? 0;
+      matchedSpans.push([start, start + token.length]);
     }
   }
+
+  for (const wordMatch of normalized.matchAll(/\b[a-z]{5,}\b/gi)) {
+    const word = wordMatch[0];
+    const start = wordMatch.index ?? 0;
+    const end = start + word.length;
+    const overlapsMatched = matchedSpans.some(([s, e]) => start < e && end > s);
+    if (overlapsMatched) {
+      continue;
+    }
+    const fuzzy = findFuzzyLexiconMatch(word, entries);
+    if (fuzzy !== null) {
+      matches.push(fuzzy);
+    }
+  }
+
   return matches;
 }
 
@@ -763,6 +899,32 @@ export async function extractWithOllama(
   }
 }
 
+function hasUnrecognizedSubstantiveTokens(
+  messages: ChatEntry[],
+  mode: PickMode,
+  vetoed: readonly VetoedOption[],
+): boolean {
+  const entries = getLexiconForMode(mode);
+  const vetoedSet = new Set(vetoed.map((v) => v.name.toLowerCase()));
+  for (const msg of messages) {
+    const normalized = msg.text.replace(/([a-z0-9])-([a-z0-9])/gi, "$1 $2");
+    for (const tokenMatch of normalized.matchAll(/\b[a-z]{3,}\b/gi)) {
+      const token = tokenMatch[0].toLowerCase();
+      if (STOPWORDS.has(token)) {
+        continue;
+      }
+      const matched = matchLexiconInText(token, entries);
+      if (matched.length > 0 && matched.every((m) => vetoedSet.has(m.toLowerCase()))) {
+        continue;
+      }
+      if (matched.length === 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function decideRoom(
   messages: ChatEntry[],
   mode: PickMode,
@@ -770,6 +932,20 @@ export async function decideRoom(
 ): Promise<DecisionVerdict> {
   if (config.llmMode === "rules") {
     return extractDeterministic(messages, mode);
+  }
+  if (config.llmMode === "ollama") {
+    return extractWithOllama(messages, mode, config);
+  }
+
+  // Auto mode: run classical Gazetteer + NegEx + Combined Approval Voting first (<2ms).
+  // Escalate to local Ollama only when chat contains unrecognized venue/dish terms that
+  // produced zero classical candidates.
+  const deterministic = extractDeterministic(messages, mode);
+  if (mode === "surprise" || messages.length === 0 || deterministic.top3.length > 0) {
+    return deterministic;
+  }
+  if (!hasUnrecognizedSubstantiveTokens(messages, mode, deterministic.vetoed)) {
+    return deterministic;
   }
   return extractWithOllama(messages, mode, config);
 }

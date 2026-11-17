@@ -1,7 +1,7 @@
 # PickForUs Agent Instructions
 
 ## Overview
-PickForUs (v3) turns a 60-second anonymous group chat into a ranked, veto-aware group decision using schema-constrained local Ollama (`qwen3.5:9b`) with a deterministic negation and spam-dedup fallback engine.
+PickForUs (v3) preserves the original 2019 white-canvas UI/UX (3 teal menu buttons, top-right boxed countdown, anonymous pill bubbles, centered dashed `Top 3:` overlay) powered primarily by a classical Gazetteer + Fuzzy Damerau-Levenshtein + NegEx Clause Negation + Combined Approval Voting engine (`<2ms`), with local Ollama (`qwen3.5:9b`) strictly as an out-of-dictionary fallback.
 
 ## Commands
 - Install: `npm install`
@@ -13,8 +13,8 @@ PickForUs (v3) turns a 60-second anonymous group chat into a ranked, veto-aware 
 
 ## Architecture & Conventions
 - `src/shared/types.ts`: shared API/WebSocket/decision types (use `.js` relative import specifiers on server for `NodeNext`).
-- `src/server/`: Express + `ws` (`noServer: true` on `/ws` only) + `node:sqlite` (`DatabaseSync`) + Ollama/deterministic decision engine (`extractor.ts`).
-- `src/client/`: React 19 + Vite SPA (`index.html` entry).
+- `src/server/`: Express + `ws` (`noServer: true` on `/ws` only) + `node:sqlite` (`DatabaseSync`) + classical-first / Ollama-fallback engine (`extractor.ts`).
+- `src/client/`: React 19 + Vite SPA (`index.html` entry) supporting `/`, `/food`, `/destination`, `/pickforusplease`, and `/room/:code`.
 - `tests/`: Vitest unit + integration tests (`tests/extractor.test.ts`, `tests/server.test.ts`).
 
 ## Hard Rules
