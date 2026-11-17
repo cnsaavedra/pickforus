@@ -13,5 +13,5 @@
     "noEmit": false,
     "types": ["node"]
   },
-  "include": ["src/server/**/*", "src/shared/**/*"]
+  "include": ["src/algorithms/**/*", "src/server/**/*", "src/shared/**/*"]
 }

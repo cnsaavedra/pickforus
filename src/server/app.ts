@@ -3,26 +3,22 @@ import { type Server as HttpServer, createServer } from "node:http";
 import path from "node:path";
 import express, { type Express, type RequestHandler } from "express";
 import { type RawData, WebSocket, WebSocketServer } from "ws";
+import { DESTINATION_LEXICON, FOOD_LEXICON } from "../algorithms/gazetteer.js";
+import { runDecisionPipeline } from "../algorithms/pipeline.js";
 import type {
   HealthStatus,
-  LlmMode,
   PickMode,
   RoomSnapshot,
   WsClientPayload,
   WsServerPayload,
 } from "../shared/types.js";
 import { PickForUsStore } from "./db.js";
-import { decideRoom } from "./extractor.js";
 
 export interface PickForUsServerOptions {
   dbPath?: string;
-  llmMode?: LlmMode;
-  ollamaBaseUrl?: string;
-  ollamaModel?: string;
-  ollamaTimeoutMs?: number;
   distClientDir?: string;
   viteMiddleware?: RequestHandler;
-  decideFn?: typeof decideRoom;
+  decideFn?: typeof runDecisionPipeline;
 }
 
 export interface PickForUsServer {
@@ -54,13 +50,6 @@ const DESTINATION_SIMULATION_LINES: readonly SimulatedLine[] = [
   { participantId: "sim-4", text: "down for arcade or board games, just no karaoke" },
 ];
 
-export function parseLlmMode(raw: string | undefined): LlmMode {
-  if (raw === "rules" || raw === "ollama" || raw === "auto") {
-    return raw;
-  }
-  return "auto";
-}
-
 function isPickMode(raw: unknown): raw is PickMode {
   return raw === "food" || raw === "destination" || raw === "surprise";
 }
@@ -84,18 +73,7 @@ function rawDataToString(data: RawData): string {
 
 export function createPickForUsServer(options?: PickForUsServerOptions): PickForUsServer {
   const dbPath = options?.dbPath ?? process.env.PICKFORUS_DB_PATH ?? "./data/pickforus.sqlite";
-  const llmMode = options?.llmMode ?? parseLlmMode(process.env.PICKFORUS_LLM_MODE);
-  const ollamaBaseUrl = (
-    options?.ollamaBaseUrl ??
-    process.env.OLLAMA_BASE_URL ??
-    "http://127.0.0.1:11434"
-  ).replace(/\/$/, "");
-  const ollamaModel = options?.ollamaModel ?? process.env.OLLAMA_MODEL ?? "qwen3.5:9b";
-  const envTimeoutMs = Number(process.env.OLLAMA_TIMEOUT_MS);
-  const ollamaTimeoutMs =
-    options?.ollamaTimeoutMs ??
-    (Number.isFinite(envTimeoutMs) && envTimeoutMs > 0 ? envTimeoutMs : 25000);
-  const runDecision = options?.decideFn ?? decideRoom;
+  const runDecision = options?.decideFn ?? runDecisionPipeline;
 
   const store = new PickForUsStore(dbPath);
   const app = express();
@@ -205,12 +183,9 @@ export function createPickForUsServer(options?: PickForUsServerOptions): PickFor
           return null;
         }
         const targetRound = snapshotBefore.roundNumber;
-        const verdict = await runDecision(snapshotBefore.messages, snapshotBefore.mode, {
-          llmMode,
-          baseUrl: ollamaBaseUrl,
-          model: ollamaModel,
-          timeoutMs: ollamaTimeoutMs,
-        });
+        const verdict = await Promise.resolve(
+          runDecision(snapshotBefore.messages, snapshotBefore.mode),
+        );
 
         const latest = store.getRoomSnapshot(code);
         if (latest === null || latest.roundNumber !== targetRound) {
@@ -388,23 +363,13 @@ export function createPickForUsServer(options?: PickForUsServerOptions): PickFor
     });
   });
 
-  app.get("/api/health", async (_req, res) => {
-    let ollamaAvailable = false;
-    try {
-      const probe = await fetch(`${ollamaBaseUrl}/api/tags`, {
-        method: "GET",
-        signal: AbortSignal.timeout(500),
-      });
-      ollamaAvailable = probe.ok;
-    } catch {
-      ollamaAvailable = false;
-    }
-
+  app.get("/api/health", (_req, res) => {
     const status: HealthStatus = {
       ok: true,
-      ollamaAvailable,
-      ollamaModel,
-      llmMode,
+      lexiconCounts: {
+        food: FOOD_LEXICON.length,
+        destination: DESTINATION_LEXICON.length,
+      },
     };
     res.json(status);
   });

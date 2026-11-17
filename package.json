@@ -3,16 +3,17 @@
   "version": "3.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "60-second anonymous group chat that breaks friend-group indecision using local LLM extraction and deterministic negation/spam rules.",
+  "description": "60-second anonymous group-chat decision app built with classical NLP (Gazetteer, Damerau-Levenshtein, NegEx) and Combined Approval Voting.",
   "repository": {
     "type": "git",
     "url": "https://github.com/cnsaavedra/pickforus.git"
   },
   "keywords": [
-    "llm",
-    "ollama",
-    "neuro-symbolic",
-    "group-decision",
+    "algorithms",
+    "approval-voting",
+    "negex",
+    "levenshtein",
+    "nlp",
     "websocket",
     "typescript",
     "react"
@@ -37,10 +38,13 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/ws": "^8.18.0",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^5.2.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vite": "^6.2.0",
-    "vitest": "^3.0.8"
+    "vite": "^7.3.8",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "picomatch": "^4.0.7"
   }
 }

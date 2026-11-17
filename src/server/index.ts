@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createPickForUsServer, parseLlmMode } from "./app.js";
+import { createPickForUsServer } from "./app.js";
 
 async function main(): Promise<void> {
   const envFile = path.resolve(process.cwd(), ".env");
@@ -10,17 +10,13 @@ async function main(): Promise<void> {
   }
   const isProd = process.argv.includes("--prod") || process.env.NODE_ENV === "production";
   const port = Number(process.env.PORT ?? 3000);
-  const llmMode = parseLlmMode(process.env.PICKFORUS_LLM_MODE);
 
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const distFromCompiled = path.resolve(currentDir, "../client");
   const distFromCwd = path.resolve(process.cwd(), "dist/client");
   const distClientDir = existsSync(distFromCompiled) ? distFromCompiled : distFromCwd;
 
-  const server = createPickForUsServer({
-    llmMode,
-    ...(isProd ? { distClientDir } : {}),
-  });
+  const server = createPickForUsServer(isProd ? { distClientDir } : undefined);
 
   let closeVite: (() => Promise<void>) | undefined;
   if (!isProd) {
@@ -47,9 +43,7 @@ async function main(): Promise<void> {
     });
   });
 
-  console.log(
-    `PickForUs listening on http://localhost:${port} (llmMode=${llmMode}, env=${isProd ? "prod" : "dev"})`,
-  );
+  console.log(`PickForUs listening on http://localhost:${port} (env=${isProd ? "prod" : "dev"})`);
 
   let shuttingDown = false;
   const shutdown = async (): Promise<void> => {

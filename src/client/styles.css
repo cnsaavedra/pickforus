@@ -123,7 +123,7 @@ body {
 }
 
 .pfu-btn-outline {
-  padding: 5px 14px;
+  padding: 6px 13px;
   border: 1px solid #17a2b8;
   border-radius: 4px;
   background-color: #ffffff;
@@ -355,8 +355,8 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(560px, 90vw);
-  max-height: 82vh;
+  width: min(620px, 92vw);
+  max-height: 84vh;
   overflow-y: auto;
   background-color: rgba(255, 255, 255, 0.98);
   border: 5px dashed #000000;
@@ -432,7 +432,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pfu-btn-link {
@@ -448,6 +448,86 @@ body {
 
 .pfu-btn-link:hover {
   color: #212529;
+}
+
+/* Algorithm Learning Drawer */
+.pfu-trace-panel {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.83rem;
+  color: #343a40;
+}
+
+.pfu-trace-section h3 {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.pfu-trace-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pfu-trace-voter {
+  font-weight: 600;
+  color: #212529;
+}
+
+.pfu-trace-clauses {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pfu-clause-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.pfu-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.pfu-badge-approve {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.pfu-badge-veto {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.pfu-badge-neutral {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.pfu-fuzzy-note {
+  font-size: 0.75rem;
+  color: #0c6f7e;
+  font-weight: 500;
+}
+
+.pfu-trace-empty,
+.pfu-trace-rule {
+  margin: 0;
+  color: #495057;
 }
 
 @media (max-width: 640px) {

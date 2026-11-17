@@ -2,8 +2,6 @@ export type PickMode = "food" | "destination" | "surprise";
 
 export type RoomPhase = "lobby" | "active" | "deciding" | "decided";
 
-export type LlmMode = "auto" | "ollama" | "rules";
-
 export interface ChatEntry {
   id: string;
   roomCode: string;
@@ -27,6 +25,38 @@ export interface VetoedOption {
   reason: string;
 }
 
+export interface FuzzyCorrection {
+  input: string;
+  matched: string;
+}
+
+export interface ClauseAnalysis {
+  clause: string;
+  negated: boolean;
+  matchedOptions: string[];
+  fuzzyCorrections: FuzzyCorrection[];
+}
+
+export interface MessageAnalysis {
+  text: string;
+  voterLabel: string;
+  clauses: ClauseAnalysis[];
+}
+
+export interface VoterBallotSummary {
+  voterLabel: string;
+  approved: string[];
+  vetoed: string[];
+  duplicateMentions: number;
+}
+
+export interface AlgorithmTrace {
+  durationMs: number;
+  messageBreakdown: MessageAnalysis[];
+  ballots: VoterBallotSummary[];
+  tieBreakRule: string;
+}
+
 export interface DecisionVerdict {
   winner: string;
   summary: string;
@@ -34,10 +64,9 @@ export interface DecisionVerdict {
   vetoed: VetoedOption[];
   duplicateDetected: boolean;
   duplicateNote: string | null;
-  engineUsed: "ollama" | "rules";
-  modelName: string | null;
   mapsUrl: string;
   decidedAt: string;
+  trace: AlgorithmTrace;
 }
 
 export interface RoomSnapshot {
@@ -54,9 +83,10 @@ export interface RoomSnapshot {
 
 export interface HealthStatus {
   ok: boolean;
-  ollamaAvailable: boolean;
-  ollamaModel: string;
-  llmMode: LlmMode;
+  lexiconCounts: {
+    food: number;
+    destination: number;
+  };
 }
 
 export type WsClientPayload =

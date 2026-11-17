@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
+import { runDecisionPipeline } from "../src/algorithms/pipeline.js";
 import { type PickForUsServer, createPickForUsServer } from "../src/server/app.js";
 import { PickForUsStore } from "../src/server/db.js";
-import { decideRoom } from "../src/server/extractor.js";
 import type { HealthStatus, RoomSnapshot, WsServerPayload } from "../src/shared/types.js";
 
 interface ConnectedWs {
@@ -22,7 +22,6 @@ async function startTestServer(
 ): Promise<{ server: PickForUsServer; baseUrl: string; wsUrl: string }> {
   const server = createPickForUsServer({
     dbPath: ":memory:",
-    llmMode: "rules",
     ...options,
   });
   await new Promise<void>((resolve) => {
@@ -154,8 +153,8 @@ describe("PickForUs server & WebSocket integration", () => {
     expect(healthRes.status).toBe(200);
     const health = (await healthRes.json()) as HealthStatus;
     expect(health.ok).toBe(true);
-    expect(health.llmMode).toBe("rules");
-    expect(typeof health.ollamaAvailable).toBe("boolean");
+    expect(health.lexiconCounts.food).toBeGreaterThan(50);
+    expect(health.lexiconCounts.destination).toBeGreaterThan(20);
 
     const createRes = await fetch(`${baseUrl}/api/rooms`, {
       method: "POST",
@@ -172,8 +171,8 @@ describe("PickForUs server & WebSocket integration", () => {
     expect(missingRes.status).toBe(404);
   });
 
-  it("runs decideRoom exactly once when timer hits 0 across 3 WebSocket clients", async () => {
-    const decideSpy = vi.fn(decideRoom);
+  it("runs runDecisionPipeline exactly once when timer hits 0 across 3 WebSocket clients", async () => {
+    const decideSpy = vi.fn(runDecisionPipeline);
     const { server, baseUrl, wsUrl } = await startTestServer({ decideFn: decideSpy });
     servers.push(server);
 
@@ -220,7 +219,7 @@ describe("PickForUs server & WebSocket integration", () => {
   });
 
   it("deduplicates spam via WebSocket join + chat, keeps SQLite open on disconnect, and isolates rounds on reset", async () => {
-    const decideSpy = vi.fn(decideRoom);
+    const decideSpy = vi.fn(runDecisionPipeline);
     const { server, baseUrl, wsUrl } = await startTestServer({ decideFn: decideSpy });
     servers.push(server);
 

@@ -223,11 +223,14 @@ function MainMenu({ health, healthChecked, onEnterRoom }: MainMenuProps) {
     }
   }
 
+  const totalPatterns = health
+    ? health.lexiconCounts.food + health.lexiconCounts.destination
+    : null;
   const engineLine = !healthChecked
-    ? "Checking engine status..."
-    : health?.ollamaAvailable
-      ? `Primary: Gazetteer + NegEx Approval Voting · Fallback: Local Qwen (${health.ollamaModel || "qwen3.5:9b"} ready)`
-      : "Primary: Gazetteer + NegEx Approval Voting · Fallback: Local Qwen (offline)";
+    ? "Checking decision engine..."
+    : totalPatterns !== null
+      ? `Gazetteer (${totalPatterns} patterns) · NegEx Negation · Combined Approval Voting`
+      : "Gazetteer Matching · NegEx Negation · Combined Approval Voting";
 
   return (
     <div className="pfu-menu-page">
@@ -293,7 +296,7 @@ function MainMenu({ health, healthChecked, onEnterRoom }: MainMenuProps) {
 
         <p className="pfu-menu-status">
           <span
-            className={`pfu-status-dot ${health?.ollamaAvailable ? "pfu-status-dot--live" : ""}`}
+            className={`pfu-status-dot ${health?.ok ? "pfu-status-dot--live" : ""}`}
             aria-hidden="true"
           />
           {engineLine}
@@ -325,6 +328,7 @@ function ChatRoomScreen({
   const [copiedInvite, setCopiedInvite] = useState<boolean>(false);
   const [chatText, setChatText] = useState<string>("");
   const [sendingChat, setSendingChat] = useState<boolean>(false);
+  const [showSteps, setShowSteps] = useState<boolean>(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const notFoundRef = useRef<boolean>(false);
@@ -520,6 +524,7 @@ function ChatRoomScreen({
     if (actionBusy || !snapshot) return;
     setActionBusy(true);
     setBannerError(null);
+    setShowSteps(false);
     try {
       await fetchJson<RoomSnapshot>(`/api/rooms/${encodeURIComponent(roomCode)}/reset`, {
         method: "POST",
@@ -713,7 +718,7 @@ function ChatRoomScreen({
           {snapshot.phase === "deciding" || verdict === null ? (
             <div className="pfu-overlay-thinking">
               <h2>Picking for you...</h2>
-              <p>Filtering vetoes and duplicate spam.</p>
+              <p>Running NegEx clause parsing and Combined Approval Voting.</p>
             </div>
           ) : (
             <>
@@ -756,9 +761,7 @@ function ChatRoomScreen({
               </p>
 
               <p className="pfu-overlay-engine">
-                {verdict.engineUsed === "ollama"
-                  ? `Fallback Local Qwen (${verdict.modelName ?? "qwen3.5:9b"}) · ${verdict.summary}`
-                  : `Approval Voting + NegEx (<2ms) · ${verdict.summary}`}
+                Computed in {verdict.trace.durationMs.toFixed(2)} ms &middot; {verdict.summary}
               </p>
 
               <div className="pfu-overlay-actions">
@@ -778,10 +781,92 @@ function ChatRoomScreen({
                 >
                   Play Again
                 </button>
+                <button
+                  type="button"
+                  className="pfu-btn-outline"
+                  onClick={() => setShowSteps((prev) => !prev)}
+                >
+                  {showSteps ? "Hide Algorithm Steps" : "Show Algorithm Steps"}
+                </button>
                 <button type="button" className="pfu-btn-link" onClick={onBackToMenu}>
                   Main Menu
                 </button>
               </div>
+
+              {showSteps ? (
+                <div className="pfu-trace-panel" aria-label="Algorithm execution steps">
+                  <div className="pfu-trace-section">
+                    <h3>1. Clause Segmentation, Gazetteer &amp; NegEx Polarity</h3>
+                    {verdict.trace.messageBreakdown.length === 0 ? (
+                      <p className="pfu-trace-empty">No chat messages submitted.</p>
+                    ) : (
+                      <ul className="pfu-trace-list">
+                        {verdict.trace.messageBreakdown.map((msg, msgIdx) => (
+                          <li key={`${msg.voterLabel}-${msgIdx}`}>
+                            <span className="pfu-trace-voter">{msg.voterLabel}:</span>{" "}
+                            <span className="pfu-trace-clauses">
+                              {msg.clauses.map((c, cIdx) => {
+                                const badgeClass =
+                                  c.matchedOptions.length === 0
+                                    ? "pfu-badge-neutral"
+                                    : c.negated
+                                      ? "pfu-badge-veto"
+                                      : "pfu-badge-approve";
+                                const badgeText =
+                                  c.matchedOptions.length === 0
+                                    ? "0 Neutral"
+                                    : c.negated
+                                      ? `-1 Veto: ${c.matchedOptions.join(", ")}`
+                                      : `+1 Approve: ${c.matchedOptions.join(", ")}`;
+                                return (
+                                  <span key={`${c.clause}-${cIdx}`} className="pfu-clause-chip">
+                                    &ldquo;{c.clause}&rdquo;{" "}
+                                    <span className={`pfu-badge ${badgeClass}`}>{badgeText}</span>
+                                    {c.fuzzyCorrections.length > 0 ? (
+                                      <span className="pfu-fuzzy-note">
+                                        (typo:{" "}
+                                        {c.fuzzyCorrections
+                                          .map((f) => `${f.input}→${f.matched}`)
+                                          .join(", ")}
+                                        )
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="pfu-trace-section">
+                    <h3>2. Combined Approval Voter Ballots (-1, 0, +1)</h3>
+                    {verdict.trace.ballots.length === 0 ? (
+                      <p className="pfu-trace-empty">No ballots recorded.</p>
+                    ) : (
+                      <ul className="pfu-trace-list">
+                        {verdict.trace.ballots.map((b) => (
+                          <li key={b.voterLabel}>
+                            <span className="pfu-trace-voter">{b.voterLabel}:</span>{" "}
+                            {b.approved.length > 0 ? `+${b.approved.join(", +")}` : "no approvals"}
+                            {b.vetoed.length > 0 ? ` · -${b.vetoed.join(", -")}` : ""}
+                            {b.duplicateMentions > 0
+                              ? ` · (${b.duplicateMentions} duplicate ${b.duplicateMentions === 1 ? "repeat" : "repeats"} collapsed)`
+                              : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="pfu-trace-section">
+                    <h3>3. Tie-Break &amp; Winner Rule</h3>
+                    <p className="pfu-trace-rule">{verdict.trace.tieBreakRule}</p>
+                  </div>
+                </div>
+              ) : null}
             </>
           )}
         </section>
@@ -820,7 +905,7 @@ export function App() {
           setHealth(status);
         }
       } catch {
-        // Leave null and report offline fallback status.
+        // Leave null and report default engine labels.
       } finally {
         if (active) {
           setHealthChecked(true);
