@@ -194,8 +194,8 @@ describe("runDecisionPipeline (Gazetteer + NegEx + Combined Approval Voting)", (
     expect(tieWithSpam.trace.tieBreakRule).toContain("earliest first mention");
   });
 
-  it("recovers 2019 screenshot foods, fuzzy typos, and emits a clean educational AlgorithmTrace", () => {
-    const retro2019 = runDecisionPipeline(
+  it("handles hyphenated foods, earliest-mention ties, fuzzy typos, and AlgorithmTrace output", () => {
+    const tieAndHyphenRound = runDecisionPipeline(
       [
         msg("p1", "i think i want spaghetti", 1),
         msg("p2", "or fries idk", 2),
@@ -205,8 +205,8 @@ describe("runDecisionPipeline (Gazetteer + NegEx + Combined Approval Voting)", (
       "food",
     );
     // Spaghetti and Fries both tie at 2 voters; Spaghetti came first so it wins #1.
-    expect(retro2019.winner).toBe("Spaghetti");
-    expect(retro2019.top3.map((o) => o.name)).toEqual(["Spaghetti", "Fries", "Bubble Tea"]);
+    expect(tieAndHyphenRound.winner).toBe("Spaghetti");
+    expect(tieAndHyphenRound.top3.map((o) => o.name)).toEqual(["Spaghetti", "Fries", "Bubble Tea"]);
 
     const fuzzyTypos = runDecisionPipeline(
       [

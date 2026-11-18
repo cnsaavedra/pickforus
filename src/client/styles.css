@@ -17,7 +17,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Main Menu (preserved & improved 2019 mainmenu.png) */
+/* Main Menu */
 .pfu-menu-page {
   min-height: 100vh;
   display: flex;
@@ -170,7 +170,7 @@ body {
   background-color: #28a745;
 }
 
-/* Chat Room (preserved & improved 2019 chatscreenfood.png) */
+/* Chat Room */
 .pfu-chat-page {
   min-height: 100vh;
   background-color: #ffffff;
@@ -349,7 +349,7 @@ body {
   cursor: not-allowed;
 }
 
-/* Center Dashed Verdict Overlay (preserved & improved 2019 suggestionfoodv2.png) */
+/* Center Dashed Verdict Overlay */
 .pfu-overlay {
   position: fixed;
   top: 50%;

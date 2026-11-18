@@ -75,9 +75,9 @@ function parseBrowserRoute(pathname: string, search: string): ParsedRoute {
     return { view: "chat", mode: "surprise", roomCode: queryCode };
   }
 
-  const legacyMatch = /^\/room\/([a-z0-9_-]+)$/i.exec(cleanPath);
-  if (legacyMatch?.[1]) {
-    return { view: "chat", mode: "food", roomCode: legacyMatch[1].toUpperCase() };
+  const roomPathMatch = /^\/room\/([a-z0-9_-]+)$/i.exec(cleanPath);
+  if (roomPathMatch?.[1]) {
+    return { view: "chat", mode: "food", roomCode: roomPathMatch[1].toUpperCase() };
   }
 
   if (queryCode) {

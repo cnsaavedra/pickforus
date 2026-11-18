@@ -1,48 +1,43 @@
 # PickForUs
 
-> **A 60-second anonymous group-chat decision app — preserving the minimalist 2019 UI/UX and implementing the exact classical NLP and Social Choice algorithms it was built for: Gazetteer Phrase Extraction, Damerau-Levenshtein Typo Recovery, NegEx Clause Negation, and Combined Approval Voting.**
+> **A 60-second anonymous group-chat decision app built with classical NLP and Social Choice algorithms: Gazetteer Phrase Extraction, Damerau-Levenshtein Typo Recovery, NegEx Clause Negation, and Combined Approval Voting.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](LICENSE)
 [![Node >= 22](https://img.shields.io/badge/Node-%3E%3D22-339933.svg)](package.json)
 [![TypeScript 5.8](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg)](tsconfig.json)
 [![Algorithms: NegEx + Approval Voting](https://img.shields.io/badge/Algorithms-NegEx%20%2B%20Approval%20Voting-17a2b8.svg)](docs/ALGORITHMS.md)
 
-[Live Walkthrough](#live-walkthrough) · [Same 2019 UI/UX, Improved](#same-2019-uiux-improved) · [Algorithms & Learning Architecture](#algorithms--learning-architecture) · [Quickstart](#quickstart) · [Algorithm Deep Dive](docs/ALGORITHMS.md) · [2019 Archive Branch](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)
+[Live Walkthrough](#live-walkthrough) · [How It Works](#how-it-works) · [Algorithms & Architecture](#algorithms--architecture) · [Quickstart](#quickstart) · [Algorithm Deep Dive](docs/ALGORITHMS.md)
 
 ---
 
 Hanging out with friends, everyone is starving, and every message in the group chat is *"idk, whatever you guys want"*?
 
-**PickForUs** turns a **60-second anonymous blitz chat** into a clear group verdict. Instead of building a formal poll first, everyone drops honest cravings and hard vetoes before politeness stalls the chat. At `0`, PickForUs strips filler words, enforces exclusions (*"please I don't want burger again"*), collapses repeat spam (*"ramen ramen ramen!!"*), breaks ties fairly, and renders an inspectable step-by-step algorithm trace.
+Originally created in **October 2018** and upgraded to modern TypeScript, React 19, and built-in Node SQLite (`node:sqlite`), **PickForUs** turns a **60-second anonymous blitz chat** into a clear group verdict. Instead of building a formal poll first, everyone drops honest cravings and hard vetoes before politeness stalls the chat. At `0`, PickForUs strips filler words, enforces exclusions (*"please I don't want burger again"*), collapses repeat spam (*"ramen ramen ramen!!"*), breaks ties fairly, and renders an inspectable step-by-step algorithm trace.
 
 ---
 
 ## Live Walkthrough
 
-![PickForUs live 60-second walkthrough preserving the classic 2019 UI/UX](./docs/media/pickforus-demo.gif)
+![PickForUs live 60-second walkthrough](./docs/media/pickforus-demo.gif)
 
 | 1. Main Menu (`Picking Food` / `Destination` / `Pick For Us`) | 2. Anonymous Pill Feed + Boxed Timer | 3. Centered Dashed `Top 3:` Overlay + Trace |
 | :---: | :---: | :---: |
-| ![PickForUs Main Menu](./docs/media/v3-lobby.png) | ![PickForUs Live Chat](./docs/media/v3-live-blitz.png) | ![PickForUs Dashed Verdict Overlay](./docs/media/v3-verdict.png) |
-| Classic white canvas and three `#17a2b8` teal buttons that start a 60s room immediately. | Top-right black-bordered integer timer, sky-blue server pills, grey anonymous bubbles, green `Send` bar. | Centered black-dashed `Top 3:` box honoring `"don't want"` exclusions, spam caps, and **Show Algorithm Steps**. |
+| ![PickForUs Main Menu](./docs/media/lobby.png) | ![PickForUs Live Chat](./docs/media/live-chat.png) | ![PickForUs Dashed Verdict Overlay](./docs/media/verdict.png) |
+| Clean white canvas and three `#17a2b8` teal mode buttons, 4-letter room join, and live lexicon count. | Top-right black-bordered integer timer, sky-blue server pills, grey anonymous bubbles, and green `Send` bar. | Centered black-dashed `Top 3:` box honoring `"don't want"` exclusions, spam caps, and **Show Algorithm Steps**. |
 
 ---
 
-## Same 2019 UI/UX, Improved
+## How It Works
 
-Originally prototyped in **October 2018 – May 2019** ([`v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)), PickForUs explored extracting consensus directly from unstructured group chat. The current codebase keeps that exact minimalist 2019 interface while replacing every brittle prototype hack with clean, verifiable algorithms:
-
-| Screen / Layer | 2019 Original (`v1-2019-archive`) | Improved Codebase (`master`) |
-| :--- | :--- | :--- |
-| **Main Menu** | ![2019 Menu](./meta/foodexamples/mainmenu.png) | Preserves the centered white canvas + 3 `#17a2b8` teal buttons; adds 4-letter room join and lexicon health status. |
-| **Chat & Timer** | ![2019 Chat](./meta/foodexamples/chatscreenfood.png) | Preserves the top-right black-bordered integer clock, light-blue server pills, grey anonymous bubbles, and green `Send` bar; isolates timer + chat per room (`?room=CODE`). |
-| **Results Overlay** | ![2019 Results](./meta/foodexamples/suggestionfoodv2.png) | Preserves the centered black-dashed `Top 3:` box, `"You have duplicates, but we fixed that for you :)"`, and teal suggestion button; fixes `"topFood"` URL bug and adds **Show Algorithm Steps**. |
-| **Decision Engine** | Space-splitter (`length > 3`), counted `"don't want burger"` FOR burger, leaked `top3[]`. | Modular **`src/algorithms/`** pipeline (`<2ms`): **Gazetteer + Damerau-Levenshtein `<= 1` + NegEx Negation + Combined Approval Voting (`-1, 0, +1`)**. |
-| **Persistence** | External `mongodb://localhost:27017` closed after `/get-data`. | Zero-config built-in Node SQLite (`node:sqlite` `DatabaseSync`) scoped per `(room_code, round_number)`. |
+1. **Pick a Mode or Join a Room** — Start a new session for **Picking Food**, **Picking Destination**, or **Pick For Us please**, or join friends via a 4-letter room code (`?room=CODE`).
+2. **60-Second Anonymous Chat** — Everyone sends quick cravings, complaints, and hard vetoes as anonymous grey message pills while the shared room timer counts down to `0`.
+3. **Deterministic Group Tally** — When the clock hits zero, the server runs all room messages once through NegEx clause segmentation, word-boundary gazetteer matching, Damerau-Levenshtein typo recovery, and Combined Approval Voting.
+4. **Actionable Verdict & Step-by-Step Trace** — A centered black-dashed `Top 3:` card reveals the top choices, a duplicate-spam notice (`"You have duplicates, but we fixed that for you :)"`), excluded vetoes, a direct suggestions link, and a live **Show Algorithm Steps** inspector.
 
 ---
 
-## Algorithms & Learning Architecture
+## Algorithms & Architecture
 
 Each stage of the decision engine lives in its own focused, readable module under [`src/algorithms/`](src/algorithms/):
 
@@ -107,9 +102,8 @@ npm run build   # Vite client bundle + NodeNext server compile
 
 ---
 
-## Repository History & License
+## Project History & License
 
-- **`master` (current):** Clean TypeScript / React 19 / `node:sqlite` implementation preserving the 2019 UI/UX on top of the original 2018–2019 commit graph.
-- **[`v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive):** Frozen snapshot of the May 2019 prototype (`88641c5`) preserved for historical reference.
+Originally created in **October 2018** as a real-time Express and WebSocket group-decision app, and upgraded to TypeScript 5.8, React 19, Vite 7, Vitest, and built-in `node:sqlite`.
 
 Licensed under the [MIT License](LICENSE).

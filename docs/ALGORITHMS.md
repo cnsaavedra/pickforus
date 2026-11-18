@@ -1,12 +1,12 @@
 # PickForUs — Classical NLP & Social Choice Algorithms
 
-This guide explains the exact non-statistical, deterministic computer science algorithms behind **PickForUs**, why they solve the problems first attempted in 2018–2019, and how each stage maps directly to the modules in [`src/algorithms/`](../src/algorithms/).
+This guide explains the deterministic computer science algorithms behind **PickForUs** (originally created in **October 2018**) and how each stage maps directly to the modules in [`src/algorithms/`](../src/algorithms/).
 
 ---
 
-## 1. The 2019 Behavioral Hypothesis & Algorithmic Gap
+## 1. Behavioral Design & Why Polls Stall
 
-Most group-decision apps force friends into rigid polls before anyone agrees on options. PickForUs (first built in October 2018 – May 2019 on [`v1-2019-archive`](https://github.com/cnsaavedra/pickforus/tree/v1-2019-archive)) tested a simpler behavioral rule:
+Most group-decision apps force friends into rigid polls before anyone agrees on options. PickForUs is built around a simpler behavioral rule:
 
 1. **Time-boxed anonymity breaks politeness deadlock.** Giving friends 60 seconds behind anonymous grey pills captures honest impulses before everyone replies *"idk, whatever you want."*
 2. **Free-form chat carries constraints simple polls lose.** Real messages contain filler chatter, typos, exclusions, and enthusiastic repeats:
@@ -15,8 +15,6 @@ Most group-decision apps force friends into rigid polls before anyone agrees on 
    - `"kinda craving ramen or pho"` -> multiple approvals (`+1` each)
    - `"ramen ramen ramen!!"` -> single-voter cap (`+1` max approval, flagged duplicate)
    - `"down for ramen or tacos, just no sushi"` -> `+1` on Ramen and Tacos, `-1` on Sushi
-
-In 2019, [`index.js`](https://github.com/cnsaavedra/pickforus/blob/v1-2019-archive/index.js) split every sentence on spaces (`msg.split(" ")`), dropped words `<= 3` characters (`pho`, `bbq`, `pie`, `sub`), skipped only four stopwords (`want`, `some`, `have`, `test`), and counted words directly in MongoDB. That meant `"I don't want burger"` voted **for** `burger`.
 
 ---
 
@@ -41,7 +39,7 @@ Inspired by **NegEx** (Chapman et al., 2001), negation cues must be scoped to th
 
 ### Stage 2 — Word-Boundary Gazetteer & Open-Phrase Grammar (`src/algorithms/gazetteer.ts`)
 
-Instead of naive `split(" ")` filtering `word.length > 3`:
+Gazetteer extraction resolves multi-word and short-token candidates cleanly:
 
 1. **Hyphen normalization:** `"bubble-tea"` and `"rice-bowls"` become `"bubble tea"` and `"rice bowls"`.
 2. **Longest-first `\b...\b` matching:** Multi-word entries (`fried chicken`, `dave & busters`, `mini golf`, `bubble tea`) match before shorter terms (`tea`, `bar`, `pie`). Word boundaries guarantee `"pho"`, `"bbq"`, `"pie"`, `"sub"`, and `"tea"` match while `"steak"` never triggers `"tea"`.
@@ -75,9 +73,9 @@ In social choice theory, **Combined Approval Voting** (Brams & Fishburn 1978; Fe
 
 ---
 
-## 3. Worked Example: Classic 2019 Demo Chat
+## 3. Worked Example: Group Food Chat
 
-Using the messages from `chatscreenfood.png`:
+Consider a typical 60-second food chat:
 
 1. **Voters 1 & 2** mention `"spaghetti"` and `"fries"` (`2` approvals each, `0` vetoes).
 2. **Spaghetti** appeared in message `0`, **Fries** in message `1` -> **Spaghetti** wins the 2-to-2 tie via `firstMentionIndex ASC` (`0 < 1`).
@@ -86,19 +84,7 @@ Using the messages from `chatscreenfood.png`:
 
 ---
 
-## 4. 2019 Bugs Fixed in v3
-
-| Component | 2019 Bug | v3 Engineering Fix |
-| :--- | :--- | :--- |
-| **Tokenization** | `msg.split(" ")` dropped `length <= 3` (`pho`, `bbq`, `pie`) | Longest-first `\b...\b` gazetteer + fuzzy edit distance `<= 1` |
-| **Negation** | Counted `"I don't want burger"` as `+1` vote for `burger` | NegEx clause segmentation + inline polarity splitting |
-| **Spam Tie-Break** | Raw count `$sum: 1` let one spammer dominate rankings | Per-voter `Set` (`+1` max) + `firstMentionIndex` tie-break |
-| **Timers & State** | Global `var timer = 60` + `db.close()` after 1 round | Per-room timers, `node:sqlite` by `(room_code, round_number)` |
-| **Suggestion URL** | `elem.href += "topFood"` linked literally to `"topFood"` | URL-encoded `mapsUrl` from `verdict.winner` and `mode` |
-
----
-
-## 5. Complexity Summary
+## 4. Complexity Summary
 
 For $M$ messages with total length $L$ characters, $|G|$ gazetteer entries, and $C$ extracted candidate options:
 
